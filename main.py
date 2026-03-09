@@ -5,6 +5,7 @@ from time_system import TimeSystem
 from slot_machine import SlotMachine
 from shop import Shop
 from suspicion_system import SuspicionSystem
+from guard import Guard
 
 pygame.init()
 
@@ -23,11 +24,21 @@ slot_machine = SlotMachine()
 shop = Shop()
 suspicion = SuspicionSystem()
 
+guards = [
+    Guard(300,200),
+    Guard(500,400),
+    Guard(700,250)
+]
+
 running = True
 
 while running:
 
     clock.tick(60)
+
+    for guard in guards:
+        if guard.see_player(player):
+            suspicion.increase(1)
 
     # EVENTS
     for event in pygame.event.get():
@@ -54,6 +65,9 @@ while running:
                     shop.open_shop(player)
 
     # MOVEMENT
+    for guard in guards:
+        guard.move()
+
     keys = pygame.key.get_pressed()
     moved = player.move(keys)
 
@@ -72,6 +86,10 @@ while running:
 
     time_system.draw(screen, player)
     suspicion.draw(screen)
+    for guard in guards:
+        guard.draw_vision(screen)
+    for guard in guards:
+        guard.draw(screen)
 
     pygame.display.update()
 
