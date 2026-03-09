@@ -25,9 +25,9 @@ shop = Shop()
 suspicion = SuspicionSystem()
 
 guards = [
-    Guard(300,200),
-    Guard(500,400),
-    Guard(700,250)
+    Guard(300, 200),
+    Guard(500, 400),
+    Guard(700, 250)
 ]
 
 running = True
@@ -35,10 +35,6 @@ running = True
 while running:
 
     clock.tick(60)
-
-    for guard in guards:
-        if guard.see_player(player):
-            suspicion.increase(1)
 
     # EVENTS
     for event in pygame.event.get():
@@ -64,32 +60,51 @@ while running:
                 elif interaction == "shop":
                     shop.open_shop(player)
 
-    # MOVEMENT
-    for guard in guards:
-        guard.move()
-
+    # PLAYER MOVEMENT
     keys = pygame.key.get_pressed()
     moved = player.move(keys)
-
-    if suspicion.is_caught():
-        print("Security caught the gorilla!")
-        running = False
 
     if moved:
         time_system.add_time(1)
 
+    # GUARD AI
+    for guard in guards:
+
+        if guard.see_player(player):
+            guard.chasing = True
+
+        if guard.chasing:
+            guard.chase_player(player)
+            suspicion.increase(2)
+        else:
+            guard.move()
+
+        # escape check
+        distance = ((guard.x - player.x) ** 2 + (guard.y - player.y) ** 2) ** 0.5
+
+        if distance > 250:
+            guard.chasing = False
+
+    # GAME OVER
+    if suspicion.is_caught():
+        print("Security caught the gorilla!")
+        running = False
+
     # DRAW
-    screen.fill((30, 120, 30))  # casino floor color
+    screen.fill((30, 120, 30))
 
     casino_map.draw(screen)
+
+    for guard in guards:
+        guard.draw_vision(screen)
+
     player.draw(screen)
+
+    for guard in guards:
+        guard.draw(screen)
 
     time_system.draw(screen, player)
     suspicion.draw(screen)
-    for guard in guards:
-        guard.draw_vision(screen)
-    for guard in guards:
-        guard.draw(screen)
 
     pygame.display.update()
 

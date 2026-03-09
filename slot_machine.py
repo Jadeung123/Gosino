@@ -3,7 +3,6 @@ import random
 class SlotMachine:
 
     def play(self, player):
-
         bet = 10
 
         if player.money < bet:

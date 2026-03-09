@@ -10,7 +10,6 @@ class TimeSystem:
         self.time += amount
 
     def draw(self, screen, player):
-
         time_text = self.font.render(f"Time: {self.time}", True, (255,255,255))
         money_text = self.font.render(f"Money: ${player.money}", True, (255,255,0))
 

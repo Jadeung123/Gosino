@@ -6,6 +6,9 @@ class Clothing:
         self.suspicion_reduction = suspicion_reduction
         self.durability = durability
 
+    def __str__(self):
+        return self.name
+
     def use_day(self):
         self.durability -= 1
 

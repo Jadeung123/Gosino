@@ -4,20 +4,19 @@ import random
 class Guard:
 
     def __init__(self, x, y):
-
         self.x = x
         self.y = y
-
         self.speed = 2
         self.direction = random.choice(["up","down","left","right"])
-
         self.size = 30
         self.color = (0,0,255)
-
         self.move_timer = 0
+        self.chasing = False
+        self.chase_speed = 4
+        self.sprite = pygame.image.load("sprites/guard.png")
+        self.sprite = pygame.transform.scale(self.sprite,(32,32))
 
     def move(self):
-
         self.move_timer += 1
 
         if self.move_timer > 60:
@@ -37,8 +36,7 @@ class Guard:
             self.x += self.speed
 
     def draw(self, screen):
-
-        pygame.draw.rect(screen, self.color, (self.x, self.y, self.size, self.size))
+        screen.blit(self.sprite,(self.x,self.y))
 
     def see_player(self, player):
         dx = player.x - self.x
@@ -90,3 +88,14 @@ class Guard:
                 [(self.x+30,self.y+15),
                 (self.x+150,self.y-60),
                 (self.x+150,self.y+90)])
+            
+    def chase_player(self, player):
+        if player.x > self.x:
+            self.x += self.chase_speed
+        if player.x < self.x:
+            self.x -= self.chase_speed
+
+        if player.y > self.y:
+            self.y += self.chase_speed
+        if player.y < self.y:
+            self.y -= self.chase_speed
