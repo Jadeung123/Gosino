@@ -1,22 +1,33 @@
 import pygame
 import random
+import math
 
 class Guard:
 
     def __init__(self, x, y):
+
         self.x = x
         self.y = y
-        self.speed = 2
+
+        self.speed = 1.2
+        self.chase_speed = 2.2
+
         self.direction = random.choice(["up","down","left","right"])
-        self.size = 30
-        self.color = (0,0,255)
+
         self.move_timer = 0
+        self.notice_timer = 0
+
         self.chasing = False
-        self.chase_speed = 4
+
+        self.vision_distance = 110
+
         self.sprite = pygame.image.load("sprites/guard.png")
         self.sprite = pygame.transform.scale(self.sprite,(32,32))
 
+
+    # PATROL MOVEMENT
     def move(self):
+
         self.move_timer += 1
 
         if self.move_timer > 60:
@@ -35,19 +46,22 @@ class Guard:
         if self.direction == "right":
             self.x += self.speed
 
+
     def draw(self, screen):
         screen.blit(self.sprite,(self.x,self.y))
 
+
+    # PLAYER DETECTION
     def see_player(self, player):
+
         dx = player.x - self.x
         dy = player.y - self.y
 
-        distance = (dx**2 + dy**2) ** 0.5
+        distance = math.sqrt(dx**2 + dy**2)
 
-        if distance > 150:
+        if distance > self.vision_distance:
             return False
 
-        # Direction check
         if self.direction == "up" and dy < 0:
             return True
 
@@ -61,41 +75,47 @@ class Guard:
             return True
 
         return False
-    
+
+
+    # VISION CONE
     def draw_vision(self, screen):
+
         vision_color = (255,255,0)
 
         if self.direction == "up":
             pygame.draw.polygon(screen, vision_color,
-                [(self.x+15,self.y),
-                (self.x-60,self.y-120),
-                (self.x+90,self.y-120)])
+                [(self.x+16,self.y),
+                 (self.x-40,self.y-80),
+                 (self.x+72,self.y-80)])
 
         if self.direction == "down":
             pygame.draw.polygon(screen, vision_color,
-                [(self.x+15,self.y+30),
-                (self.x-60,self.y+150),
-                (self.x+90,self.y+150)])
+                [(self.x+16,self.y+32),
+                 (self.x-40,self.y+110),
+                 (self.x+72,self.y+110)])
 
         if self.direction == "left":
             pygame.draw.polygon(screen, vision_color,
-                [(self.x,self.y+15),
-                (self.x-120,self.y-60),
-                (self.x-120,self.y+90)])
+                [(self.x,self.y+16),
+                 (self.x-90,self.y-40),
+                 (self.x-90,self.y+72)])
 
         if self.direction == "right":
             pygame.draw.polygon(screen, vision_color,
-                [(self.x+30,self.y+15),
-                (self.x+150,self.y-60),
-                (self.x+150,self.y+90)])
-            
-    def chase_player(self, player):
-        if player.x > self.x:
-            self.x += self.chase_speed
-        if player.x < self.x:
-            self.x -= self.chase_speed
+                [(self.x+32,self.y+16),
+                 (self.x+110,self.y-40),
+                 (self.x+110,self.y+72)])
 
-        if player.y > self.y:
-            self.y += self.chase_speed
-        if player.y < self.y:
-            self.y -= self.chase_speed
+
+    # CHASE PLAYER
+    def chase_player(self, player):
+
+        dx = player.x - self.x
+        dy = player.y - self.y
+
+        distance = math.sqrt(dx**2 + dy**2)
+
+        if distance != 0:
+
+            self.x += (dx / distance) * self.chase_speed
+            self.y += (dy / distance) * self.chase_speed
