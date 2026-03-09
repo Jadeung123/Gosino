@@ -4,6 +4,7 @@ from map import CasinoMap
 from time_system import TimeSystem
 from slot_machine import SlotMachine
 from shop import Shop
+from suspicion_system import SuspicionSystem
 
 pygame.init()
 
@@ -20,6 +21,7 @@ casino_map = CasinoMap()
 time_system = TimeSystem()
 slot_machine = SlotMachine()
 shop = Shop()
+suspicion = SuspicionSystem()
 
 running = True
 
@@ -40,6 +42,7 @@ while running:
 
                 if interaction == "slots":
                     slot_machine.play(player)
+                    suspicion.increase(5)
 
                 elif interaction == "dice":
                     print("Playing dice game")
@@ -54,6 +57,10 @@ while running:
     keys = pygame.key.get_pressed()
     moved = player.move(keys)
 
+    if suspicion.is_caught():
+        print("Security caught the gorilla!")
+        running = False
+
     if moved:
         time_system.add_time(1)
 
@@ -62,7 +69,9 @@ while running:
 
     casino_map.draw(screen)
     player.draw(screen)
+
     time_system.draw(screen, player)
+    suspicion.draw(screen)
 
     pygame.display.update()
 
