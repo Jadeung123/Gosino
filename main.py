@@ -8,6 +8,7 @@ from suspicion_system import SuspicionSystem
 from guard import Guard
 from roulette import Roulette
 from dice_game import DiceGame
+from score_system import ScoreSystem
 
 pygame.init()
 
@@ -27,6 +28,7 @@ shop = Shop()
 suspicion = SuspicionSystem()
 roulette = Roulette()
 dice_game = DiceGame()
+score_system = ScoreSystem()
 
 guards = [
     Guard(300, 200),
@@ -37,8 +39,11 @@ guards = [
 running = True
 
 while running:
-
     clock.tick(60)
+
+    #SCORE
+    score_system.add_survival_score()
+    score_system.add_risk_bonus(suspicion.level)
 
     # EVENTS
     for event in pygame.event.get():
@@ -52,14 +57,14 @@ while running:
                 interaction = casino_map.check_interaction(player.get_rect())
 
                 if interaction == "slots":
-                    slot_machine.play(player)
+                    slot_machine.play(player, score_system)
                     suspicion.increase(5)
 
                 elif interaction == "dice":
-                    dice_game.play(player)
+                    dice_game.play(player, score_system)
 
                 elif interaction == "roulette":
-                    roulette.play(player)
+                    roulette.play(player, score_system)
 
                 elif interaction == "shop":
                     shop.open_shop(player)
@@ -73,7 +78,6 @@ while running:
 
     # GUARD AI
     for guard in guards:
-
         if guard.see_player(player):
             guard.chasing = True
 
@@ -92,6 +96,7 @@ while running:
     # GAME OVER
     if suspicion.is_caught():
         print("Security caught the gorilla!")
+        print("FINAL SCORE:", score_system.score)
         running = False
 
     # DRAW
@@ -109,6 +114,7 @@ while running:
 
     time_system.draw(screen, player)
     suspicion.draw(screen)
+    score_system.draw(screen)
 
     pygame.display.update()
 
