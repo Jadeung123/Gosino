@@ -1,0 +1,67 @@
+import pygame
+from player import Player
+from map import CasinoMap
+from time_system import TimeSystem
+from slot_machine import SlotMachine
+
+pygame.init()
+
+WIDTH = 800
+HEIGHT = 600
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Gorilla Gambler")
+
+clock = pygame.time.Clock()
+
+player = Player(400, 300)
+casino_map = CasinoMap()
+time_system = TimeSystem()
+slot_machine = SlotMachine()
+
+running = True
+
+while running:
+
+    clock.tick(60)
+
+    # EVENTS
+    for event in pygame.event.get():
+
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.KEYDOWN:
+
+            if event.key == pygame.K_e:
+                interaction = casino_map.check_interaction(player.get_rect())
+
+                if interaction == "slots":
+                    slot_machine.play(player)
+
+                elif interaction == "dice":
+                    print("Playing dice game")
+
+                elif interaction == "roulette":
+                    print("Playing roulette")
+
+                elif interaction == "shop":
+                    print("Opening shop")
+
+    # MOVEMENT
+    keys = pygame.key.get_pressed()
+    moved = player.move(keys)
+
+    if moved:
+        time_system.add_time(1)
+
+    # DRAW
+    screen.fill((30, 120, 30))  # casino floor color
+
+    casino_map.draw(screen)
+    player.draw(screen)
+    time_system.draw(screen, player)
+
+    pygame.display.update()
+
+pygame.quit()
