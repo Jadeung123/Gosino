@@ -9,6 +9,7 @@ class Player:
         self.speed = 4
 
         self.money = 100  # starting money
+        self.inventory = []
 
     def move(self, keys):
         moved = False
@@ -33,3 +34,6 @@ class Player:
 
     def get_rect(self):
         return pygame.Rect(self.x,self.y,self.size,self.size)
+    
+    def add_clothing(self, clothing):
+        self.inventory.append(clothing)

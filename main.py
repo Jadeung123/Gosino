@@ -3,6 +3,7 @@ from player import Player
 from map import CasinoMap
 from time_system import TimeSystem
 from slot_machine import SlotMachine
+from shop import Shop
 
 pygame.init()
 
@@ -18,6 +19,7 @@ player = Player(400, 300)
 casino_map = CasinoMap()
 time_system = TimeSystem()
 slot_machine = SlotMachine()
+shop = Shop()
 
 running = True
 
@@ -46,7 +48,7 @@ while running:
                     print("Playing roulette")
 
                 elif interaction == "shop":
-                    print("Opening shop")
+                    shop.open_shop(player)
 
     # MOVEMENT
     keys = pygame.key.get_pressed()
