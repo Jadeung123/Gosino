@@ -6,6 +6,7 @@ from slot_machine import SlotMachine
 from shop import Shop
 from suspicion_system import SuspicionSystem
 from guard import Guard
+from roulette import Roulette
 
 pygame.init()
 
@@ -23,6 +24,7 @@ time_system = TimeSystem()
 slot_machine = SlotMachine()
 shop = Shop()
 suspicion = SuspicionSystem()
+roulette = Roulette()
 
 guards = [
     Guard(300, 200),
@@ -55,7 +57,7 @@ while running:
                     print("Playing dice game")
 
                 elif interaction == "roulette":
-                    print("Playing roulette")
+                    roulette.play(player)
 
                 elif interaction == "shop":
                     shop.open_shop(player)
