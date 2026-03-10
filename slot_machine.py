@@ -2,11 +2,11 @@ import random
 
 class SlotMachine:
 
-    def play(self, player, score_system):
+    def play(self, player, score_system, messages):
         bet = 10
 
         if player.money < bet:
-            print("Not enough money!")
+            messages.add("not enough money", player.x, player.y)
             return
 
         player.money -= bet
@@ -17,13 +17,13 @@ class SlotMachine:
             win = bet * 3
             player.money += win
             score_system.add_money_score(win)
-            print("JACKPOT! You won", win)
+            messages.add(f"JACKPOT!! +{win}", player.x, player.y)
 
         elif spin >= 5:
             win = bet * 2
             player.money += win
             score_system.add_money_score(win)
-            print("You won", win)
+            messages.add(f"+{win}", player.x, player.y)
 
         else:
             print("You lost the bet")

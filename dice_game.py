@@ -1,9 +1,9 @@
 import random
 import time
+from message_system import MessageSystem
 
 class DiceGame:
-
-    def play(self, player, score_system):
+    def play(self, player, score_system, messages):
         bet = 10
 
         if player.money < bet:
@@ -26,11 +26,11 @@ class DiceGame:
             player.money += win
             score_system.add_money_score(win)
 
-            print("You win!", win)
+            messages.add(f"+{win}", player.x, player.y)
 
         # LOSE
         elif total in [2,3,12]:
-            print("Craps! You lose!")
+            messages.add("-10", player.x, player.y)
 
         # ROLL AGAIN
         else:
@@ -51,10 +51,10 @@ class DiceGame:
                     win = bet * 2
                     player.money += win
                     score_system.add_money_score(win)
-
-                    print("You hit your number! You win", win)
+                    messages.add(f"+{win}", player.x, player.y)
                     break
 
                 elif total == 7:
                     print("Rolled a 7! You lose!")
+                    messages.add("-10", player.x, player.y)
                     break

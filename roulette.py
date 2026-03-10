@@ -20,11 +20,11 @@ class Roulette:
         return "black"
 
 
-    def play(self, player, score_system):
+    def play(self, player, score_system, messages):
         bet = 10
 
         if player.money < bet:
-            print("Not enough money!")
+            messages.add("Not enough money", player.x, player.y)
             return
 
         print("Roulette Bets:")
@@ -56,10 +56,10 @@ class Roulette:
                 win = bet * 2
                 player.money += win
                 score_system.add_money_score(win)
-                print("You won!", win)
+                messages.add(f"+{win}", player.x, player.y)
 
             else:
-                print("You lost!")
+                messages.add("-10", player.x, player.y)
 
         # BLACK
         elif choice == "2":
@@ -67,10 +67,10 @@ class Roulette:
                 win = bet * 2
                 player.money += win
                 score_system.add_money_score(win)
-                print("You won!", win)
+                messages.add(f"+{win}", player.x, player.y)
 
             else:
-                print("You lost!")
+                messages.add("-10", player.x, player.y)
 
         # NUMBER
         elif choice == "3":
@@ -78,7 +78,7 @@ class Roulette:
                 win = bet * 35
                 player.money += win
                 score_system.add_money_score(win)
-                print("JACKPOT! You won", win)
+                messages.add(f"JACKPOT!! +{win}", player.x, player.y)
 
             else:
-                print("You lost!")
+                messages.add("-10", player.x, player.y)

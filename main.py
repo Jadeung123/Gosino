@@ -1,4 +1,5 @@
 import pygame
+import random
 from player import Player
 from map import CasinoMap
 from time_system import TimeSystem
@@ -9,6 +10,7 @@ from guard import Guard
 from roulette import Roulette
 from dice_game import DiceGame
 from score_system import ScoreSystem
+from message_system import MessageSystem
 
 pygame.init()
 
@@ -29,17 +31,23 @@ suspicion = SuspicionSystem()
 roulette = Roulette()
 dice_game = DiceGame()
 score_system = ScoreSystem()
+messages = MessageSystem()
 
+guard_types = ["normal", "fast", "watcher", "lazy"]
 guards = [
-    Guard(300, 200),
-    Guard(500, 400),
-    Guard(700, 250)
+    Guard(300, 200, random.choice(guard_types)),
+    Guard(500, 400, random.choice(guard_types)),
+    Guard(700, 250, random.choice(guard_types))
 ]
+difficulty = 1
+difficulty_timer = 0
 
+game_state = "exploring"
 running = True
 
 while running:
     clock.tick(60)
+    messages.update()
 
     #SCORE
     score_system.add_survival_score()
@@ -47,27 +55,41 @@ while running:
 
     # EVENTS
     for event in pygame.event.get():
-
         if event.type == pygame.QUIT:
             running = False
-
         if event.type == pygame.KEYDOWN:
-
             if event.key == pygame.K_e:
                 interaction = casino_map.check_interaction(player.get_rect())
-
                 if interaction == "slots":
-                    slot_machine.play(player, score_system)
-                    suspicion.increase(5)
-
-                elif interaction == "dice":
-                    dice_game.play(player, score_system)
-
+                    game_state = "slots"
                 elif interaction == "roulette":
-                    roulette.play(player, score_system)
-
+                    game_state = "roulette"
+                elif interaction == "dice":
+                    game_state = "dice"
                 elif interaction == "shop":
-                    shop.open_shop(player)
+                    game_state = "shop"
+    
+    if game_state == "slots":
+        slot_machine.play(player, score_system, messages)
+        messages.add("Suspicion +5", player.x, player.y)
+        suspicion.increase(5)
+        game_state = "exploring"
+    elif game_state == "dice":
+        dice_game.play(player, score_system, messages)
+        game_state = "exploring"
+    elif game_state == "roulette":
+        roulette.play(player, score_system, messages)
+        game_state = "exploring"
+    elif game_state == "shop":
+        shop.open_shop(player)
+        game_state = "exploring"
+
+    difficulty_timer += 1
+    if difficulty_timer > 1800:
+        difficulty += 1
+        guard.update_speed(difficulty, messages, player)
+        guards.append(Guard(random.randint(100, 700), random.randint(100, 700), "elite"))
+        difficulty_timer = 0
 
     # PLAYER MOVEMENT
     keys = pygame.key.get_pressed()
@@ -78,18 +100,16 @@ while running:
 
     # GUARD AI
     for guard in guards:
-        if guard.see_player(player):
-            guard.chasing = True
+        guard.see_player(player, guards, messages)
 
-        if guard.chasing:
+        if guard.state == "chase":
             guard.chase_player(player)
-            suspicion.increase(2)
+            suspicion.increase(1)
         else:
             guard.move()
 
         # escape check
         distance = ((guard.x - player.x) ** 2 + (guard.y - player.y) ** 2) ** 0.5
-
         if distance > 250:
             guard.chasing = False
 
@@ -114,6 +134,7 @@ while running:
 
     time_system.draw(screen, player)
     suspicion.draw(screen)
+    messages.draw(screen)
     score_system.draw(screen)
 
     pygame.display.update()
