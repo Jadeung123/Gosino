@@ -91,6 +91,22 @@ class Guard:
         rotated = pygame.transform.rotate(self.sprite, -self.angle)
         screen.blit(rotated, (self.x, self.y))
 
+    def draw_detection(self, screen):
+        if self.suspicion <= 0:
+            return
+
+        bar_width = 40
+        bar_height = 6
+        ratio = min(self.suspicion / 60, 1)
+        x = self.x - 4
+        y = self.y - 10
+
+        # background
+        pygame.draw.rect(screen, (60,60,60), (x, y, bar_width, bar_height))
+
+        # fill
+        pygame.draw.rect(screen, (255,60,60), (x, y, bar_width * ratio, bar_height))
+
     def see_player(self, player, guards, messages):
         dx = player.x - self.x
         dy = player.y - self.y

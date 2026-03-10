@@ -3,13 +3,18 @@ import pygame
 class CasinoMap:
 
     def __init__(self):
-
+        self.cooldowns = {
+            "slots": 0,
+            "dice": 0,
+            "roulette": 0
+        }
         # interaction zones
         self.areas = [
             {"rect": pygame.Rect(100,100,100,100), "type":"slots"},
             {"rect": pygame.Rect(600,100,100,100), "type":"dice"},
             {"rect": pygame.Rect(350,400,100,100), "type":"roulette"},
-            {"rect": pygame.Rect(50,450,100,100), "type":"shop"}
+            {"rect": pygame.Rect(50,450,100,100), "type":"shop"},
+            {"rect": pygame.Rect(700,500,80,80), "type":"exit"}
         ]
 
         # load sprites
@@ -39,46 +44,44 @@ class CasinoMap:
 
 
     def draw(self, screen):
-
         for area in self.areas:
-
             rect = area["rect"]
             area_type = area["type"]
 
             if area_type == "slots":
-
                 if self.slot_sprite:
                     screen.blit(self.slot_sprite, rect)
                 else:
                     pygame.draw.rect(screen,(200,0,0),rect)
 
             elif area_type == "dice":
-
                 if self.dice_sprite:
                     screen.blit(self.dice_sprite, rect)
                 else:
                     pygame.draw.rect(screen,(0,0,200),rect)
 
             elif area_type == "roulette":
-
                 if self.roulette_sprite:
                     screen.blit(self.roulette_sprite, rect)
                 else:
                     pygame.draw.rect(screen,(200,200,0),rect)
 
             elif area_type == "shop":
-
                 if self.shop_sprite:
                     screen.blit(self.shop_sprite, rect)
                 else:
                     pygame.draw.rect(screen,(0,200,0),rect)
 
+            elif area_type == "exit":
+                pygame.draw.rect(screen,(200,200,255),rect)
 
     def check_interaction(self, player_rect):
-
         for area in self.areas:
-
             if player_rect.colliderect(area["rect"]):
                 return area["type"]
-
         return None
+    
+    def update_cooldowns(self):
+        for game in self.cooldowns:
+            if self.cooldowns[game] > 0:
+                self.cooldowns[game] -= 1
