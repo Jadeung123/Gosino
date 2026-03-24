@@ -22,6 +22,7 @@ from upgrade_manager import UpgradeManager
 from title_screen import TitleScreen
 from inventory_panel import InventoryPanel
 from blackjack import Blackjack
+from day_transition import DayTransition
 
 
 class Game:
@@ -63,6 +64,7 @@ class Game:
         self.day_system      = DaySystem()
         self.upgrade_manager = UpgradeManager()
         self.inventory_panel = InventoryPanel()
+        self.day_transition  = DayTransition()
 
     def _init_guards(self):
         """Spawn the starting guards and reset the difficulty timer."""
@@ -98,7 +100,8 @@ class Game:
         """Tick every system that runs regardless of game state."""
         # Freeze all systems when paused, on title, or game over
         if self.state in (STATE_GAME_OVER, STATE_MENU, STATE_TITLE):
-            return
+            if not self.day_transition.active:
+                return
 
         self.messages.update()
         self.day_system.update()
@@ -108,6 +111,8 @@ class Game:
         if self.day_system.closing and not self.day_system.warned:
             self.messages.add_ui("CASINO CLOSING! GUARDS ALERT!")
             self.day_system.warned = True
+
+        self.day_transition.update()
 
     # ==================================================================
     #  EVENT HANDLING
@@ -143,6 +148,15 @@ class Game:
                         self._init_guards()
                         self.state = STATE_TITLE
                 return
+
+            # --- Day transition screen ---
+            if self.day_transition.active:
+                result = self.day_transition.handle_input(event)
+                if result == "continue":
+                    self.day_transition.stop()
+                    self.upgrade_manager.roll_upgrades()
+                    self.state = STATE_UPGRADE
+                continue
 
             # --- Global F-key hotkeys (work in every in-game state) ---
             if event.type == pygame.KEYDOWN:
@@ -355,10 +369,19 @@ class Game:
 
     def _handle_exit(self):
         if self.player.money >= self.day_system.debt:
-            self.player.money -= self.day_system.debt
-            self.messages.add_ui("Debt Paid! Day Complete!")
-            self.upgrade_manager.roll_upgrades()
-            self.state = STATE_UPGRADE
+            money_before = self.player.money
+            debt_paid = self.day_system.debt
+            self.player.money -= debt_paid
+
+            # Start the transition screen before going to upgrades
+            self.day_transition.start(
+                day_completed=self.day_system.day,
+                money_before=money_before,
+                money_after=self.player.money,
+                debt_paid=debt_paid,
+                next_debt=self.day_system.debt + max(10, 60 - self.player.debt_reduction)
+            )
+            self.state = STATE_EXPLORE
         else:
             self.state = STATE_GAME_OVER
 
@@ -487,6 +510,12 @@ class Game:
 
         if self.state == STATE_GAME_OVER:
             self._draw_game_over()
+            pygame.display.update()
+            return
+
+        if self.day_transition.active:
+            self.day_transition.draw(self.screen)
+            self.messages.draw_ui(self.screen)
             pygame.display.update()
             return
 
