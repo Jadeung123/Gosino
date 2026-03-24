@@ -14,12 +14,14 @@ from shop import Shop
 from guard import Guard
 from roulette import Roulette
 from dice_game import DiceGame
+from case_opening import CaseOpening
 from score_system import ScoreSystem
 from message_system import MessageSystem
 from day_system import DaySystem
 from upgrade_manager import UpgradeManager
 from title_screen import TitleScreen
 from inventory_panel import InventoryPanel
+from blackjack import Blackjack
 
 
 class Game:
@@ -54,6 +56,8 @@ class Game:
         self.shop            = Shop()
         self.roulette        = Roulette()
         self.dice_game       = DiceGame()
+        self.case_opening    = CaseOpening()
+        self.blackjack       = Blackjack()
         self.score_system    = ScoreSystem()
         self.messages        = MessageSystem()
         self.day_system      = DaySystem()
@@ -151,7 +155,7 @@ class Game:
 
             # --- ESC toggles menu during explore ---
             if event.type == pygame.KEYDOWN and event.key == pygame.K_TAB:
-                if self.state in (STATE_EXPLORE, STATE_SLOTS, STATE_DICE, STATE_ROULETTE, STATE_SHOP):
+                if self.state in (STATE_EXPLORE, STATE_SLOTS, STATE_DICE, STATE_CASE, STATE_ROULETTE, STATE_BLACKJACK, STATE_SHOP):
                     self.inventory_panel.toggle()
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -169,6 +173,10 @@ class Game:
                 self._events_roulette(event)
             elif self.state == STATE_SLOTS:
                 self._events_slots(event)
+            elif self.state == STATE_CASE:
+                self._events_case(event)
+            elif self.state == STATE_BLACKJACK:
+                self._events_blackjack(event)
             elif self.state == STATE_SHOP:
                 self._events_shop(event)
             elif self.state == STATE_UPGRADE:
@@ -234,6 +242,33 @@ class Game:
         elif result == "played":
             reduction = getattr(self.player, "cooldown_reduction", 0.0)
             self.casino_map.cooldowns["slots"] = int(300 * (1 - reduction))
+
+    def _events_case(self, event):
+        # Block spin while cooling down
+        if (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE
+                and self.casino_map.cooldowns["case"] > 0):
+            self.messages.add_ui("Case table cooling down!")
+            return
+
+        result = self.case_opening.handle_input(
+            event, self.player, self.score_system, self.messages, self.shop
+        )
+        if result == "exit":
+            self.case_opening.reset()
+            self.state = STATE_EXPLORE
+
+    def _events_blackjack(self, event):
+        if (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE
+                and self.blackjack.phase == "betting"
+                and self.casino_map.cooldowns["blackjack"] > 0):
+            self.messages.add_ui("Blackjack table cooling down!")
+            return
+        result = self.blackjack.handle_input(
+            event, self.player, self.score_system, self.messages, self.shop
+        )
+        if result == "exit":
+            self.blackjack.reset()
+            self.state = STATE_EXPLORE
 
     def _events_shop(self, event):
         result = self.shop.handle_input(event, self.player)
@@ -304,6 +339,14 @@ class Game:
             self.dice_game.reset()
             self.state = STATE_DICE
 
+        elif zone == "case":
+            self.case_opening.reset()
+            self.state = STATE_CASE
+
+        elif zone == "blackjack":
+            self.blackjack.reset()
+            self.state = STATE_BLACKJACK
+
         elif zone == "shop":
             self.state = STATE_SHOP
 
@@ -350,6 +393,24 @@ class Game:
 
         elif self.state == STATE_DICE:
             self.dice_game.update(self.player, self.score_system, self.messages)
+
+        elif self.state == STATE_CASE:
+            result = self.case_opening.update(
+                self.player, self.score_system, self.messages, self.shop
+            )
+            if result == "result_ready":
+                reduction = getattr(self.player, "cooldown_reduction", 0.0)
+                self.casino_map.cooldowns["case"] = int(180 * (1 - reduction))
+
+
+        elif self.state == STATE_BLACKJACK:
+            self.blackjack.update(
+                self.player, self.score_system, self.messages, self.shop
+            )
+            # Check if round just ended this frame
+            if self.blackjack.phase == "result" and self.casino_map.cooldowns["blackjack"] == 0:
+                reduction = getattr(self.player, "cooldown_reduction", 0.0)
+                self.casino_map.cooldowns["blackjack"] = int(240 * (1 - reduction))
 
         elif self.state == STATE_SHOP:
             self.shop.update()
@@ -449,6 +510,24 @@ class Game:
             pygame.display.update()
             return
 
+        if self.state == STATE_CASE:
+            self.case_opening.draw(self.screen, self.player, self.day_system)
+            self.inventory_panel.draw(
+                self.screen, self.player, self.shop, self.upgrade_manager
+            )
+            self.messages.draw_ui(self.screen)
+            pygame.display.update()
+            return
+
+        if self.state == STATE_BLACKJACK:
+            self.blackjack.draw(self.screen, self.player, self.day_system)
+            self.inventory_panel.draw(
+                self.screen, self.player, self.shop, self.upgrade_manager
+            )
+            self.messages.draw_ui(self.screen)
+            pygame.display.update()
+            return
+
         if self.state == STATE_SHOP:
             self.shop.draw(self.screen, self.player, self.day_system)
             self.inventory_panel.draw(
@@ -519,6 +598,8 @@ class Game:
         if cd["slots"] > 0: labels.append(f"Slots:    {cd['slots'] // 60 + 1}s")
         if cd["roulette"] > 0: labels.append(f"Roulette: {cd['roulette'] // 60 + 1}s")
         if cd["dice"] > 0: labels.append(f"Dice:     {cd['dice'] // 60 + 1}s")
+        if cd["case"] > 0: labels.append(f"Cases:    {cd['case'] // 60 + 1}s")
+        if cd.get("blackjack", 0) > 0: labels.append(f"Blackjack: {cd['blackjack'] // 60 + 1}s")
 
         for i, label in enumerate(labels):
             surf = self.font_sm.render(label, True, (180, 140, 80))

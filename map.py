@@ -9,13 +9,15 @@ class CasinoMap:
 
     def __init__(self):
 
-        self.cooldowns = {"slots": 0, "dice": 0, "roulette": 0}
+        self.cooldowns = {"slots": 0, "dice": 0, "roulette": 0, "case": 0, "blackjack": 0}
 
         # --- Interaction zones ---
         self.areas = [
             {"rect": pygame.Rect(100, 100, 100, 100), "type": "slots"},
             {"rect": pygame.Rect(600, 100, 100, 100), "type": "dice"},
             {"rect": pygame.Rect(350, 400, 100, 100), "type": "roulette"},
+            {"rect": pygame.Rect(650, 200, 100, 100), "type": "case"},
+            {"rect": pygame.Rect(350, 150, 100, 100), "type": "blackjack"},
             {"rect": pygame.Rect(50,  450, 100, 100), "type": "shop"},
             {"rect": pygame.Rect(700, 500,  80,  80), "type": "exit"},
         ]
@@ -90,6 +92,19 @@ class CasinoMap:
                     screen.blit(self.roulette_sprite, rect)
                 else:
                     pygame.draw.rect(screen, (200, 200, 0), rect)
+
+            elif area_type == "case":
+                pygame.draw.rect(screen, (180, 50, 50), rect)
+                font = pygame.font.SysFont(None, 22)
+                screen.blit(
+                    font.render("CASES", True, (255, 255, 255)),
+                    (rect.x + 22, rect.y + 38)
+                )
+
+            elif area_type == "blackjack":
+                pygame.draw.rect(screen, (30, 100, 50), rect)
+                font = pygame.font.SysFont(None, 22)
+                screen.blit(font.render("BJ", True, (255, 255, 255)), (rect.x + 36, rect.y + 38))
 
             elif area_type == "shop":
                 if self.shop_sprite:

@@ -212,8 +212,6 @@ class DiceGame:
             if event.key == pygame.K_SPACE and not self.rolling:
                 if not self.start_roll(player, shop):
                     messages.add_ui("Not enough money!")
-                else:
-                    return "played"
             if event.key == pygame.K_ESCAPE and not self.rolling:
                 return "exit"
 
@@ -263,7 +261,10 @@ class DiceGame:
         MCX  = (MX + MR) // 2
         self._update_slider_geom(MX, MR)
 
-        screen.fill((14, 14, 24))
+        # ── Background with diagonal stripes ─────────────────────────
+        screen.fill((10, 10, 20))
+        for i in range(-H, W + H, 36):
+            pygame.draw.line(screen, (16, 16, 28), (i, 0), (i + H, H), 14)
 
         # ── SIDEBAR ───────────────────────────────────────────────────
         pygame.draw.rect(screen, (20, 20, 34), (0, 0, self.SB, H))
@@ -281,49 +282,50 @@ class DiceGame:
         sb("SESSION",  f"{self.session_profit:+}",
            (100,255,100) if self.session_profit>=0 else (255,100,100), 214)
 
-        # ── ROW 1: title + mode ───────────────────────────────────────
-        ts = self.font_big.render("DICE", True, (255,255,255))
-        screen.blit(ts, (MX + 4, 6))
+        # ── TOP BAR with title ────────────────────────────────────────
+        pygame.draw.rect(screen, (18, 18, 30), (MX, 0, W - MX, 52))
+        pygame.draw.line(screen, (50, 50, 80), (MX, 52), (W, 52), 1)
+        ts = self.font_big.render("DICE", True, GOLD)
+        screen.blit(ts, ts.get_rect(center=(MCX, 26)))
 
-        # Mode label on its own line below title
+        # Mode label
         ml = self.font_sm.render(f"Mode: {self.mode.upper()}  (M to toggle)",
-                                  True, (175,175,175))
+                                  True, (120, 120, 140))
         screen.blit(ml, (MX + 4, 56))
 
         # Bet + win stats row
-        screen.blit(self.font_sm.render("Bet:", True, (110,110,110)), (MX+4, 80))
+        screen.blit(self.font_sm.render("Bet:", True, (115,115,115)), (MX+4, 80))
         bb = self._bet_box_rect(MX)
         pygame.draw.rect(screen, (28,28,46), bb, border_radius=4)
         pygame.draw.rect(screen, (78,78,108), bb, 2, border_radius=4)
         disp = self.bet_input if self.typing_bet else str(self.bet)
         bv = self.font.render(disp, True, GOLD)
         screen.blit(bv, bv.get_rect(center=bb.center))
-        screen.blit(self.font_sm.render("Click to type", True, (70,70,70)),
+        screen.blit(self.font_sm.render("Click to type", True, (60,60,70)),
                     (MX + 190, 80))
 
-        # Win stats (right side)
+        # Win stats
         chance = self.get_win_chance()
         mult   = self.get_multiplier()
-        screen.blit(self.font_sm.render(f"Win chance: {chance}%", True, (185,255,185)),
+        screen.blit(self.font_sm.render(f"Win chance: {chance}%", True, (100,255,150)),
                     (MX + 310, 72))
-        screen.blit(self.font_sm.render(f"Multiplier:  {mult}x",  True, (155,255,155)),
+        screen.blit(self.font_sm.render(f"Multiplier:  {mult}x",  True, (100,220,130)),
                     (MX + 310, 92))
 
         # ── DIVIDER ───────────────────────────────────────────────────
         pygame.draw.line(screen, (38,38,58), (MX, 114), (MR, 114), 1)
 
         # ── ROW 2: roll number | history ──────────────────────────────
-        rn = self.font_big.render(str(self.display_number), True, (255,200,200))
+        rn = self.font_big.render(str(self.display_number), True, GOLD)
         screen.blit(rn, rn.get_rect(center=(MX + 60, 148)))
 
-        # Roll history (to the right of the big number)
-        screen.blit(self.font_sm.render("History:", True, (100,100,100)), (MX+130, 126))
+        screen.blit(self.font_sm.render("History:", True, (80,80,90)), (MX+130, 126))
         hx = MX + 218
         for roll in self.roll_history:
             r = pygame.Rect(hx, 122, 36, 26)
-            pygame.draw.rect(screen, (36,36,36), r, border_radius=3)
-            pygame.draw.rect(screen, (80,80,80), r, 1, border_radius=3)
-            ns = self.font_sm.render(str(roll), True, (255,255,255))
+            pygame.draw.rect(screen, (22,22,36), r, border_radius=3)
+            pygame.draw.rect(screen, (55,55,80), r, 1, border_radius=3)
+            ns = self.font_sm.render(str(roll), True, (200,200,220))
             screen.blit(ns, ns.get_rect(center=r.center))
             hx += 40
 
@@ -377,13 +379,13 @@ class DiceGame:
 
         # ── CONTROLS HINT ─────────────────────────────────────────────
         hint = "Rolling..." if self.rolling else "SPACE = Roll  |  M = Mode"
-        hs   = self.font_sm.render(hint, True, (120,120,120))
+        hs   = self.font_sm.render(hint, True, (80, 80, 95))
         screen.blit(hs, hs.get_rect(center=(MCX, H - 12)))
 
         # Flash overlay
         if self.flash_timer > 0 and self.flash_color:
             fl = pygame.Surface((W, H), pygame.SRCALPHA)
-            alpha = int(55 * self.flash_timer / 25)
+            alpha = int(60 * self.flash_timer / 25)
             fl.fill((*self.flash_color, alpha))
             screen.blit(fl, (0, 0))
 
@@ -394,9 +396,9 @@ class DiceGame:
 
         if self.bar_glow_timer > 0:
             fade  = self.bar_glow_timer / 120
-            green = (60, min(255, 180 + int(80 * fade)), 80)
+            green = (40, min(255, 160 + int(80 * fade)), 70)
         else:
-            green = (60, 180, 80)
+            green = (40, 160, 70)
 
         if self.mode == "over":
             lw = int((self.target / 100) * sw)

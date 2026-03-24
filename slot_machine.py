@@ -47,8 +47,10 @@ class SlotMachine:
         self.flash_color    = (0, 0, 0)
         self.session_profit = 0
         self._shop          = None
+        self.typing_bet = False
+        self.bet_input = ""
 
-    # KEY FIX: outcome decided BEFORE animation starts
+        # KEY FIX: outcome decided BEFORE animation starts
     def _pick_outcome(self, player, shop):
         threshold = getattr(player, "slot_threshold", 5)
         spin      = random.randint(1, 10)
@@ -86,6 +88,10 @@ class SlotMachine:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = event.pos
             if self.phase == "betting":
+                if hasattr(self, '_bet_box') and self._bet_box.collidepoint(mx, my):
+                    self.typing_bet = True
+                    self.bet_input = ""
+                    return
                 for label, rect in self._quick_rects:
                     if rect.collidepoint(mx, my):
                         if label == "MIN":    self.bet = 1
@@ -98,6 +104,18 @@ class SlotMachine:
             return
 
         if event.type != pygame.KEYDOWN:
+            return
+
+        if self.typing_bet:
+            if event.key == pygame.K_RETURN:
+                if self.bet_input.isdigit() and self.bet_input:
+                    self.bet = max(1, min(player.money, int(self.bet_input)))
+                self.typing_bet = False
+                self.bet_input = ""
+            elif event.key == pygame.K_BACKSPACE:
+                self.bet_input = self.bet_input[:-1]
+            elif event.unicode.isdigit():
+                self.bet_input += event.unicode
             return
 
         # ── ESC exits from any phase ───────────────────────────────────
@@ -245,10 +263,13 @@ class SlotMachine:
         L1 = BOX_Y + BOX_H + 16
         pygame.draw.line(screen, (38,38,58), (MX, L1-8), (MR, L1-8), 1)
         screen.blit(self.font_sm.render("BET:", True, (115,115,115)), (MX+4, L1+6))
-        bb = pygame.Rect(MX+56, L1, 92, 30)
-        pygame.draw.rect(screen, (28,28,46), bb, border_radius=4)
-        pygame.draw.rect(screen, (78,78,108), bb, 2, border_radius=4)
-        bv = self.font.render(f"${self.bet}", True, GOLD)
+        bb = pygame.Rect(MX + 56, L1, 92, 30)
+        self._bet_box = bb
+        disp = (self.bet_input + "_") if self.typing_bet else f"${self.bet}"
+        border_col = (150, 150, 255) if self.typing_bet else (78, 78, 108)
+        pygame.draw.rect(screen, (28, 28, 46), bb, border_radius=4)
+        pygame.draw.rect(screen, border_col, bb, 2, border_radius=4)
+        bv = self.font.render(disp, True, GOLD)
         screen.blit(bv, bv.get_rect(center=bb.center))
 
         # ── Result row ────────────────────────────────────────────────
