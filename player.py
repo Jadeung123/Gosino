@@ -20,8 +20,6 @@ class Player:
         # Permanent upgrade attributes (set by shop)
         self.slot_threshold   = 5
         self.multiplier_bonus = 0.0
-        self.luck = 0
-        self.stealth = 0
         self.max_bet = 1000
         self.dice_speed_bonus = 0
         self.daily_bonus = 0
@@ -34,7 +32,7 @@ class Player:
 
     # ------------------------------------------------------------------
 
-    def move(self, keys, walls=None, screen_w=800, screen_h=600):
+    def move(self, keys, walls=None, screen_w=800, screen_h=558):
         """
         Move the player, then resolve collisions.
         walls  — list of pygame.Rect objects the player cannot enter.

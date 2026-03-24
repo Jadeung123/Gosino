@@ -391,8 +391,15 @@ class Game:
         elif self.state == STATE_ROULETTE:
             self.roulette.update(self.player, self.score_system, self.shop)
 
+
         elif self.state == STATE_DICE:
             self.dice_game.update(self.player, self.score_system, self.messages)
+            # Set cooldown the moment the roll finishes (rolling flips to False)
+            if (not self.dice_game.rolling
+                    and self.dice_game.final_roll != 0
+                    and self.casino_map.cooldowns["dice"] == 0):
+                reduction = getattr(self.player, "cooldown_reduction", 0.0)
+                self.casino_map.cooldowns["dice"] = int(240 * (1 - reduction))
 
         elif self.state == STATE_CASE:
             result = self.case_opening.update(
@@ -570,40 +577,175 @@ class Game:
         for guard in self.guards:
             guard.draw(self.screen)
             guard.draw_detection(self.screen)
+            guard.draw_state_indicator(self.screen)
 
         self.messages.draw_world(self.screen)
+        self._draw_cooldown_bars()
+        self._draw_interaction_prompt()
+        if self.day_system.closing:
+            self._draw_closing_warning()
         self._draw_hud()
         self.inventory_panel.draw(
             self.screen, self.player, self.shop, self.upgrade_manager
         )
 
     def _draw_hud(self):
-        """Top-right HUD: day, timer, debt, money."""
+        """
+        Bottom HUD bar — shows the key stats the player needs at a glance.
+        Drawn as a dark panel so it's always readable over the casino floor.
+        """
+        BAR_H = 42
+        bar_y = SCREEN_HEIGHT - BAR_H
+
+        # Dark background panel
+        pygame.draw.rect(self.screen, (12, 12, 22),
+                         (0, bar_y, SCREEN_WIDTH, BAR_H))
+        # Gold top border line — matches the casino theme
+        pygame.draw.line(self.screen, (100, 85, 20),
+                         (0, bar_y), (SCREEN_WIDTH, bar_y), 1)
+
         time_left = self.day_system.get_time_seconds()
+        time_color = (255, 70, 70) if time_left < 20 else (255, 210, 100)
 
+        # Each entry: (text, color)
         items = [
-            (f"Day: {self.day_system.day}",         WHITE,          10),
-            (f"Time: {time_left}s",                 (255, 200, 200), 35),
-            (f"Debt: ${self.day_system.debt}",      (255, 150, 150), 60),
-            (f"Money: ${self.player.money}",        (200, 255, 150), 85),
-            (f"Score: {int(self.score_system.score)}", WHITE,        110),
+            (f"DAY  {self.day_system.day}", (200, 200, 200)),
+            (f"${self.player.money}", (120, 255, 140)),
+            (f"DEBT  ${self.day_system.debt}", (255, 110, 110)),
+            (f"{time_left}s", time_color),
+            (f"SCORE  {int(self.score_system.score)}", (255, 215, 0)),
         ]
-        for text, color, y in items:
+
+        # Space items evenly across the full bar width
+        spacing = SCREEN_WIDTH // len(items)
+        for i, (text, color) in enumerate(items):
+            cx = spacing * i + spacing // 2
             surf = self.font.render(text, True, color)
-            self.screen.blit(surf, (SCREEN_WIDTH - surf.get_width() - 10, y))
+            self.screen.blit(surf, surf.get_rect(center=(cx, bar_y + BAR_H // 2)))
 
-        # Cooldown indicators — only show if active
-        cd = self.casino_map.cooldowns
-        labels = []
-        if cd["slots"] > 0: labels.append(f"Slots:    {cd['slots'] // 60 + 1}s")
-        if cd["roulette"] > 0: labels.append(f"Roulette: {cd['roulette'] // 60 + 1}s")
-        if cd["dice"] > 0: labels.append(f"Dice:     {cd['dice'] // 60 + 1}s")
-        if cd["case"] > 0: labels.append(f"Cases:    {cd['case'] // 60 + 1}s")
-        if cd.get("blackjack", 0) > 0: labels.append(f"Blackjack: {cd['blackjack'] // 60 + 1}s")
+    def _draw_interaction_prompt(self):
+        """
+        If the player is near an interactive zone, draw a [E] prompt above it.
+        This tells the player what they can do without cluttering the HUD.
+        """
+        # Human-readable labels for each zone type
+        LABELS = {
+            "slots": "[E] Slots",
+            "dice": "[E] Dice",
+            "roulette": "[E] Roulette",
+            "case": "[E] Cases",
+            "blackjack": "[E] Blackjack",
+            "shop": "[E] Shop",
+            "exit": "[E] Exit",
+        }
 
-        for i, label in enumerate(labels):
-            surf = self.font_sm.render(label, True, (180, 140, 80))
-            self.screen.blit(surf, (10, 140 + i * 22))
+        player_rect = self.player.get_rect()
+
+        for area in self.casino_map.areas:
+            # Expand the zone rect by 20px on each side as the detection range
+            # This way the prompt appears before the player is exactly on the zone
+            detection = area["rect"].inflate(40, 40)
+
+            if detection.colliderect(player_rect):
+                label = LABELS.get(area["type"], "[E]")
+                zone_rect = area["rect"]
+
+                # Render the text
+                surf = self.font_sm.render(label, True, (255, 255, 255))
+                sw, sh = surf.get_size()
+
+                # Center the prompt above the zone
+                px = zone_rect.centerx - sw // 2
+                cd = self.casino_map.cooldowns.get(area["type"], 0)
+                py = zone_rect.top - sh - 8
+                if cd > 0:
+                    py -= 40  # extra space to clear the cooldown bar + seconds text
+
+                # Dark pill background for readability
+                pad = 6
+                bg = pygame.Surface((sw + pad * 2, sh + pad * 2), pygame.SRCALPHA)
+                bg.fill((0, 0, 0, 160))
+                pygame.draw.rect(bg, (255, 215, 0),
+                                 (0, 0, sw + pad * 2, sh + pad * 2), 1, border_radius=4)
+                self.screen.blit(bg, (px - pad, py - pad))
+                self.screen.blit(surf, (px, py))
+
+    def _draw_closing_warning(self):
+        """
+        Flashes a red warning banner when the casino is closing.
+        Uses a sine wave to pulse the opacity — more dramatic than a simple blink.
+        """
+        import math
+
+        # pulse_alpha oscillates between 80 and 200 using the current time
+        # pygame.time.get_ticks() returns milliseconds since the game started
+        pulse = math.sin(pygame.time.get_ticks() * 0.005)  # oscillates -1 to 1
+        alpha = int(140 + pulse * 60)  # oscillates 80 to 200
+
+        W = SCREEN_WIDTH
+
+        # Red background banner
+        banner = pygame.Surface((W, 48), pygame.SRCALPHA)
+        banner.fill((180, 20, 20, alpha))
+        self.screen.blit(banner, (0, 80))
+
+        # Warning text — centered on the banner
+        font_warn = pygame.font.SysFont(None, 42)
+        text = font_warn.render("!! CASINO CLOSING  --  GET TO THE EXIT !!", True, (255, 255, 255))
+        text.set_alpha(alpha)
+        self.screen.blit(text, text.get_rect(center=(W // 2, 104)))
+
+    def _draw_cooldown_bars(self):
+        """
+        Draws a small progress bar on top of each game zone.
+        Green = ready, Red = cooling down.
+        The bar shrinks as the cooldown ticks down.
+        """
+        # Max cooldown frames per zone — must match what main.py sets on 'played'
+        MAX_COOLDOWNS = {
+            "slots": 300,
+            "dice": 240,
+            "roulette": 360,
+            "case": 180,
+            "blackjack": 240,
+        }
+
+        BAR_H = 6  # height of the bar in pixels
+
+        for area in self.casino_map.areas:
+            zone_type = area["type"]
+
+            # Skip zones that have no cooldown (shop, exit)
+            if zone_type not in MAX_COOLDOWNS:
+                continue
+
+            rect = area["rect"]
+            current = self.casino_map.cooldowns.get(zone_type, 0)
+            max_cd = MAX_COOLDOWNS[zone_type]
+
+            bar_x = rect.x
+            bar_y = rect.y - BAR_H - 4  # sit just above the zone rect
+            bar_w = rect.width
+
+            if current <= 0:
+                continue   # zone is ready — draw nothing, skip to next zone
+
+            # Background track (dark grey)
+            pygame.draw.rect(self.screen, (40, 40, 40),
+                             (bar_x, bar_y, bar_w, BAR_H), border_radius=3)
+
+            # Cooling down — red bar shrinks left to right
+            ratio = 1.0 - (current / max_cd)  # 0.0 = just used, 1.0 = ready
+            fill_w = int(bar_w * ratio)
+            if fill_w > 0:
+                pygame.draw.rect(self.screen, (220, 60, 60),
+                                 (bar_x, bar_y, fill_w, BAR_H), border_radius=3)
+
+            # Show seconds remaining as small text above the bar
+            secs = current // 60 + 1
+            surf = self.font_sm.render(f"{secs}s", True, (200, 140, 80))
+            self.screen.blit(surf, (bar_x + bar_w // 2 - surf.get_width() // 2,
+                                    bar_y - 16))
 
     # ------------------------------------------------------------------
     #  UPGRADE SCREEN

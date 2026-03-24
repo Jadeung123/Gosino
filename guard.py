@@ -1,4 +1,5 @@
 import pygame, random, math
+from constants import PLAY_HEIGHT
 
 class Guard:
     def __init__(self, x, y, guard_type="normal"):
@@ -91,7 +92,7 @@ class Guard:
 
         # --- Screen boundary clamp ---
         self.x = max(10, min(790 - 32, self.x))
-        self.y = max(10, min(590 - 32, self.y))
+        self.y = max(10, min(PLAY_HEIGHT - 32, self.y))
 
         # --- Wall collision (pillars) ---
         if walls:
@@ -131,6 +132,39 @@ class Guard:
 
         # fill
         pygame.draw.rect(screen, (255,60,60), (x, y, bar_width * ratio, bar_height))
+
+    def draw_state_indicator(self, screen):
+        """
+        Draws a ! or ? above the guard depending on their current state.
+        This gives the player a clear visual warning before being caught.
+        """
+        if self.state == "patrol":
+            return  # nothing to show when guard is calm
+
+        # Position the indicator centered above the guard sprite
+        cx = int(self.x + 16)
+        cy = int(self.y - 18)
+
+        if self.state == "alert":
+            text = "?"
+            color = (255, 220, 50)  # yellow — suspicious but not sure
+        elif self.state == "chase":
+            text = "!"
+            color = (255, 50, 50)  # red — actively chasing
+        elif self.state == "search":
+            text = "?"
+            color = (180, 180, 180)  # grey — lost you, still looking
+        else:
+            return
+
+        font = pygame.font.SysFont(None, 36)
+
+        # Dark circle background for readability
+        pygame.draw.circle(screen, (0, 0, 0), (cx, cy), 12)
+        pygame.draw.circle(screen, color, (cx, cy), 12, 2)
+
+        surf = font.render(text, True, color)
+        screen.blit(surf, surf.get_rect(center=(cx, cy)))
 
     def _effective_vision(self, player):
         """
@@ -256,15 +290,15 @@ class Guard:
         self.alert_timer = 0
         self.search_timer = 0
 
-        # Restore original chase distance based on type
-        if self.type == "elite":
-            self.chase_distance = 160
-        elif self.type == "watcher":
-            self.chase_distance = 160
-        elif self.type == "fast":
-            self.chase_distance = 160
-        else:
-            self.chase_distance = 160  # default for normal/lazy
+        # Restore chase distance based on guard type
+        chase_distances = {
+            "elite": 200,
+            "watcher": 180,
+            "fast": 140,
+            "lazy": 120,
+            "normal": 160,
+        }
+        self.chase_distance = chase_distances.get(self.type, 160)
 
     def update_speed(self, difficulty):
         self.speed += difficulty * 0.2

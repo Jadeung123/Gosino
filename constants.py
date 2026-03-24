@@ -30,3 +30,6 @@ DEFAULT_SHOW_FPS   = False
 
 DIFFICULTY_INTERVAL = 1800
 GUARD_TYPES = ["normal", "fast", "watcher", "lazy"]
+
+PLAY_HEIGHT = 558
+HUD_HEIGHT  = 42

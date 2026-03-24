@@ -4,6 +4,7 @@
 # draw() renders both the floor decorations and the walls.
 
 import pygame
+from constants import PLAY_HEIGHT
 
 class CasinoMap:
 
@@ -28,9 +29,8 @@ class CasinoMap:
         self.walls = [
             # Perimeter (10px thick)
             pygame.Rect(0, 0, 800, 10),  # top
-            pygame.Rect(0, 590, 800, 10),  # bottom
-            pygame.Rect(0, 0, 10, 600),  # left
-            pygame.Rect(790, 0, 10, 600),  # right
+            pygame.Rect(0, 0, 10, PLAY_HEIGHT),  # left
+            pygame.Rect(790, 0, 10, PLAY_HEIGHT),  # right
 
             # Decorative pillars (solid blocks, no interaction)
             pygame.Rect(250, 200, 30, 30),
@@ -125,11 +125,11 @@ class CasinoMap:
 
     def _draw_floor(self, screen):
         """Checkerboard tile pattern for the casino floor."""
-        tile   = 40
+        tile = 40
         color1 = (34, 110, 34)
         color2 = (28, 95, 28)
 
-        for row in range(0, 600, tile):
+        for row in range(0, PLAY_HEIGHT, tile):  # was range(0, 600, tile)
             for col in range(0, 800, tile):
                 color = color1 if (row // tile + col // tile) % 2 == 0 else color2
                 pygame.draw.rect(screen, color, (col, row, tile, tile))
