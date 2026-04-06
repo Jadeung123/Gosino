@@ -28,8 +28,8 @@ class TitleScreen:
         self.dragging_music = False
 
         # Slider track rects — defined once, used in draw + input
-        self.sfx_slider_rect   = pygame.Rect(420, 348, 180, 8)
-        self.music_slider_rect = pygame.Rect(420, 408, 180, 8)
+        self.sfx_slider_rect = pygame.Rect(380, 330, 200, 8)
+        self.music_slider_rect = pygame.Rect(380, 375, 200, 8)
 
         # Title buttons
         self.buttons = {
@@ -40,10 +40,10 @@ class TitleScreen:
 
         # Settings buttons — only toggles, sliders handled separately
         self.settings_buttons = {
-            "fullscreen": pygame.Rect(200, 230, 180, 40),
-            "show_fps":   pygame.Rect(420, 230, 180, 40),
-            "sound":      pygame.Rect(200, 340, 180, 40),
-            "back":       pygame.Rect(325, 530, 150, 48),
+            "fullscreen": pygame.Rect(200, 170, 180, 40),
+            "show_fps": pygame.Rect(420, 170, 180, 40),
+            "sound": pygame.Rect(300, 270, 200, 40),
+            "back": pygame.Rect(325, 540, 150, 48),
         }
         self._sound_manager = None
 
@@ -172,18 +172,19 @@ class TitleScreen:
     def _draw_settings(self, screen):
         screen.fill((12, 12, 22))
 
+        # Title
         t = self.font_sub.render("SETTINGS", True, (255, 215, 0))
-        screen.blit(t, t.get_rect(center=(SCREEN_WIDTH // 2, 80)))
-        pygame.draw.line(screen, (55, 55, 78), (150, 110), (650, 110), 1)
+        screen.blit(t, t.get_rect(center=(SCREEN_WIDTH // 2, 45)))
+        pygame.draw.line(screen, (55, 55, 78), (150, 70), (650, 70), 1)
 
         # ── SECTION 1: Display ────────────────────────────────────────
         sec1 = self.font_sm.render("DISPLAY", True, (100, 100, 140))
-        screen.blit(sec1, sec1.get_rect(center=(SCREEN_WIDTH // 2, 195)))
-        pygame.draw.line(screen, (40, 40, 60), (200, 210), (600, 210), 1)
+        screen.blit(sec1, sec1.get_rect(center=(SCREEN_WIDTH // 2, 120)))
+        pygame.draw.line(screen, (40, 40, 60), (200, 135), (600, 135), 1)
 
-        fs_lbl  = "Fullscreen:  " + ("ON" if self.fullscreen else "OFF")
-        fs_col  = (100, 255, 120) if self.fullscreen else (200, 78, 78)
-        fps_lbl = "Show FPS:  "   + ("ON" if self.show_fps else "OFF")
+        fs_lbl = "Fullscreen:  " + ("ON" if self.fullscreen else "OFF")
+        fs_col = (100, 255, 120) if self.fullscreen else (200, 78, 78)
+        fps_lbl = "Show FPS:  " + ("ON" if self.show_fps else "OFF")
         fps_col = (100, 255, 120) if self.show_fps else (200, 78, 78)
         self._btn(screen, self.settings_buttons["fullscreen"],
                   fs_lbl, (38, 38, 58), text_color=fs_col)
@@ -192,52 +193,55 @@ class TitleScreen:
 
         # ── SECTION 2: Sound ──────────────────────────────────────────
         sec2 = self.font_sm.render("SOUND", True, (100, 100, 140))
-        screen.blit(sec2, sec2.get_rect(center=(SCREEN_WIDTH // 2, 305)))
-        pygame.draw.line(screen, (40, 40, 60), (200, 320), (600, 320), 1)
+        screen.blit(sec2, sec2.get_rect(center=(SCREEN_WIDTH // 2, 238)))
+        pygame.draw.line(screen, (40, 40, 60), (200, 253), (600, 253), 1)
 
-        # Sound ON/OFF toggle
+        # Sound ON/OFF toggle — centered on its own row
         snd_lbl = "Sound:   " + ("ON" if self.sound_enabled else "OFF")
         snd_col = (100, 255, 120) if self.sound_enabled else (200, 78, 78)
         self._btn(screen, self.settings_buttons["sound"],
                   snd_lbl, (38, 38, 58), text_color=snd_col)
 
-        # SFX slider
+        # SFX row — label on left, slider on right
+        screen.blit(self.font_sm.render("SFX:", True, (160, 160, 160)),
+                    (200, self.sfx_slider_rect.y - 4))
         self._draw_slider(screen, self.sfx_slider_rect,
-                          self.sfx_volume, "SFX", 328)
+                          self.sfx_volume, "", self.sfx_slider_rect.y)
 
-        # Music slider
+        # Music row — label on left, slider on right
+        screen.blit(self.font_sm.render("Music:", True, (160, 160, 160)),
+                    (200, self.music_slider_rect.y - 4))
         self._draw_slider(screen, self.music_slider_rect,
-                          self.music_volume, "Music", 388)
+                          self.music_volume, "", self.music_slider_rect.y)
 
         # ── SECTION 3: Controls ───────────────────────────────────────
         sec3 = self.font_sm.render("CONTROLS", True, (100, 100, 140))
-        screen.blit(sec3, sec3.get_rect(center=(SCREEN_WIDTH // 2, 440)))
-        pygame.draw.line(screen, (40, 40, 60), (200, 455), (600, 455), 1)
+        screen.blit(sec3, sec3.get_rect(center=(SCREEN_WIDTH // 2, 406)))
+        pygame.draw.line(screen, (40, 40, 60), (200, 421), (600, 421), 1)
 
         keys_l = ["WASD  -  Move", "E  -  Interact", "ESC  -  Pause"]
         keys_r = ["SPACE  -  Action", "F1/F2/F3  -  Use item", "ENTER  -  Exit screen"]
         for i, k in enumerate(keys_l):
             screen.blit(self.font_sm.render(k, True, (110, 110, 110)),
-                        (220, 465 + i * 22))
+                        (220, 430 + i * 22))
         for i, k in enumerate(keys_r):
             screen.blit(self.font_sm.render(k, True, (110, 110, 110)),
-                        (430, 465 + i * 22))
+                        (430, 430 + i * 22))
 
-        pygame.draw.line(screen, (40, 40, 60), (200, 515), (600, 515), 1)
+        # Divider above back button
+        pygame.draw.line(screen, (40, 40, 60), (200, 508), (600, 508), 1)
         self._btn(screen, self.settings_buttons["back"], "BACK", (46, 46, 88))
 
     # ------------------------------------------------------------------
 
     def _draw_slider(self, screen, rect, value, label, label_y):
-        """Draws a labelled slider track, fill, handle, and percentage."""
-        # Label on the left
-        screen.blit(self.font_sm.render(f"{label}:", True, (160, 160, 160)),
-                    (200, label_y + 2))
-
-        # Percentage on the right of handle
-        pct  = int(value * 100)
-        screen.blit(self.font_sm.render(f"{pct}%", True, (255, 215, 0)),
-                    (rect.right + 14, rect.y - 4))
+        """Draws slider track, fill, handle, and percentage."""
+        # Percentage label to the right of the handle end
+        pct = int(value * 100)
+        screen.blit(
+            self.font_sm.render(f"{pct}%", True, (255, 215, 0)),
+            (rect.right + 14, rect.y - 4)
+        )
 
         # Track background
         pygame.draw.rect(screen, (40, 40, 60), rect, border_radius=5)
@@ -249,7 +253,7 @@ class TitleScreen:
                              (rect.x, rect.y, fill_w, rect.height),
                              border_radius=5)
 
-        # Handle circle
+        # Handle
         handle_x = rect.x + fill_w
         pygame.draw.circle(screen, (255, 255, 255), (handle_x, rect.centery), 9)
         pygame.draw.circle(screen, (100, 180, 255), (handle_x, rect.centery), 9, 2)

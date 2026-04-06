@@ -356,11 +356,18 @@ class Game:
             # Upgrade cards
             for i in range(len(self.upgrade_manager.current_choices)):
                 if self._upgrade_card_rect(i).collidepoint(mx, my):
+                    money_before = self.player.money
                     self.upgrade_manager.buy_upgrade(i, self.player, self.day_system)
+                    if self.player.money < money_before:
+                        self.sounds.play("buy", volume=0.8)
 
             # Reroll button
             if self._upgrade_reroll_rect().collidepoint(mx, my):
+                reroll_before = self.player.money
                 self.upgrade_manager.reroll(self.player)
+                self.upgrade_manager.reroll(self.player)
+                if self.player.money < reroll_before:
+                    self.sounds.play("chip", volume=0.6)
 
             # Next day button
             if self._upgrade_next_rect().collidepoint(mx, my):

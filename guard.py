@@ -39,8 +39,6 @@ class Guard:
             self.chase_speed = 2.4
             self.vision_distance = 160
 
-        self.sprite = pygame.image.load("sprites/guard.png")
-        self.sprite = pygame.transform.scale(self.sprite, (32, 32))
         self._chase_sound_played = False
 
     def move(self, walls=None):
@@ -49,22 +47,32 @@ class Guard:
         if self.state == "patrol":
             self.move_timer += 1
 
-            if self.move_timer > 120:
-                self.target_angle = random.uniform(0, 360)
-                self.move_timer   = 0
+            if self.move_timer > 180:
+                # Pick a new angle that's roughly forward-ish — not completely random
+                # This prevents the guard from immediately turning back into a wall
+                bias = random.uniform(-90, 90)
+                self.target_angle = (self.angle + bias) % 360
+                self.move_timer = 0
 
-            if abs(self.angle - self.target_angle) > 1:
-                if (self.target_angle - self.angle) % 360 > 180:
-                    self.angle -= self.turn_speed
-                else:
-                    self.angle += self.turn_speed
+            # Smooth angle interpolation — always takes the shortest arc
+            # This eliminates the shaky cone problem
+            diff = (self.target_angle - self.angle + 180) % 360 - 180
+            if abs(diff) > 1:
+                self.angle += max(-self.turn_speed, min(self.turn_speed, diff))
+            self.angle = self.angle % 360
 
-            rad     = math.radians(self.angle)
+            rad = math.radians(self.angle)
             self.x += math.cos(rad) * self.speed
             self.y += math.sin(rad) * self.speed
 
         elif self.state == "alert":
-            rad     = math.radians(self.angle)
+            # Smooth turn toward last known direction
+            diff = (self.target_angle - self.angle + 180) % 360 - 180
+            if abs(diff) > 1:
+                self.angle += max(-self.turn_speed, min(self.turn_speed, diff))
+            self.angle = self.angle % 360
+
+            rad = math.radians(self.angle)
             self.x += math.cos(rad) * (self.speed * 0.6)
             self.y += math.sin(rad) * (self.speed * 0.6)
 
@@ -72,51 +80,182 @@ class Guard:
             if self.alert_timer <= 0:
                 self.state = "patrol"
 
+
         elif self.state == "search":
             if self.last_seen_x is None:
                 self.state = "patrol"
                 return
 
-            dx       = self.last_seen_x - self.x
-            dy       = self.last_seen_y - self.y
+            dx = self.last_seen_x - self.x
+            dy = self.last_seen_y - self.y
             distance = math.sqrt(dx * dx + dy * dy)
 
             if distance > 5:
-                self.x += dx / distance * self.speed
-                self.y += dy / distance * self.speed
-                self.angle = math.degrees(math.atan2(dy, dx))
+                # Smooth turn toward target
+                target_angle = math.degrees(math.atan2(dy, dx))
+                diff = (target_angle - self.angle + 180) % 360 - 180
+                if abs(diff) > 1:
+                    self.angle += max(-3, min(3, diff))
+                self.angle = self.angle % 360
+                rad = math.radians(self.angle)
+                self.x = old_x + math.cos(rad) * self.speed
+                self.y = old_y + math.sin(rad) * self.speed
             else:
-                self.angle       += 2
+                # Arrived — spin slowly while looking around
+                self.angle = (self.angle + 1.5) % 360
                 self.search_timer -= 1
                 if self.search_timer <= 0:
                     self.state = "patrol"
 
         # --- Screen boundary clamp ---
+        from constants import PLAY_HEIGHT
         self.x = max(10, min(790 - 32, self.x))
         self.y = max(10, min(PLAY_HEIGHT - 32, self.y))
 
-        # --- Wall collision (pillars) ---
+        # --- Wall collision with smart bounce ---
         if walls:
             guard_rect = pygame.Rect(self.x, self.y, 32, 32)
             for wall in walls:
                 if guard_rect.colliderect(wall):
-                    # Test each axis separately so guard slides along walls
+                    hit_x = False
+                    hit_y = False
+
                     test_x = pygame.Rect(self.x, old_y, 32, 32)
                     if test_x.colliderect(wall):
                         self.x = old_x
-                        # Nudge patrol angle away from the wall
-                        if self.state == "patrol":
-                            self.target_angle = random.uniform(0, 360)
+                        hit_x = True
 
                     test_y = pygame.Rect(old_x, self.y, 32, 32)
                     if test_y.colliderect(wall):
                         self.y = old_y
-                        if self.state == "patrol":
-                            self.target_angle = random.uniform(0, 360)
+                        hit_y = True
+
+                    # Smart bounce — reflect angle off the wall axis
+                    # instead of picking a random direction
+                    if self.state == "patrol":
+                        if hit_x and hit_y:
+                            # Corner hit — reverse completely
+                            self.target_angle = (self.angle + 180) % 360
+                        elif hit_x:
+                            # Hit a vertical wall — reflect horizontally
+                            self.target_angle = (180 - self.angle) % 360
+                        elif hit_y:
+                            # Hit a horizontal wall — reflect vertically
+                            self.target_angle = (360 - self.angle) % 360
+
+                        # Add small random offset so guards don't
+                        # bounce perfectly back and forth forever
+                        self.target_angle = (self.target_angle + random.uniform(-25, 25)) % 360
+                        self.move_timer = 0
 
     def draw(self, screen):
-        rotated = pygame.transform.rotate(self.sprite, -self.angle)
-        screen.blit(rotated, (self.x, self.y))
+        """
+        Security guard — human shaped with uniform, hat, and facing direction.
+        Body rotates to show which way the guard is looking.
+        """
+        import math
+
+        cx = int(self.x + 16)
+        cy = int(self.y + 16)
+
+        rad = math.radians(self.angle)
+        dx = math.cos(rad)
+        dy = math.sin(rad)
+
+        # Perpendicular axis — used to offset body parts left/right
+        px = -dy
+        py = dx
+
+        # Uniform colors per guard type
+        uniform_colors = {
+            "normal": (40, 70, 160),
+            "fast": (180, 45, 45),
+            "watcher": (40, 130, 70),
+            "lazy": (110, 90, 50),
+            "elite": (90, 20, 110),
+        }
+        uniform = uniform_colors.get(self.type, (40, 70, 160))
+        dark_uni = tuple(max(0, c - 50) for c in uniform)
+        light_uni = tuple(min(255, c + 40) for c in uniform)
+
+        # State ring — drawn first so it appears behind the body
+        ring_color = {
+            "alert": (255, 220, 0),
+            "chase": (255, 50, 50),
+            "search": (180, 180, 180),
+        }.get(self.state, None)
+        if ring_color:
+            pygame.draw.circle(screen, ring_color, (cx, cy), 16, 3)
+
+        # Shadow
+        pygame.draw.ellipse(screen, (20, 80, 20),
+                            (cx - 9, cy + 10, 18, 5))
+
+        # Legs — two small rects pointing away from facing direction
+        l1x = int(cx - dx * 2 + px * 4)
+        l1y = int(cy - dy * 2 + py * 4)
+        l2x = int(cx - dx * 2 - px * 4)
+        l2y = int(cy - dy * 2 - py * 4)
+        pygame.draw.circle(screen, (30, 30, 30), (l1x, l1y), 4)
+        pygame.draw.circle(screen, (30, 30, 30), (l2x, l2y), 4)
+
+        # Body — uniform colored, centered
+        pygame.draw.circle(screen, uniform, (cx, cy), 11)
+
+        # Shoulder pads — two lighter circles on the sides
+        sp1x = int(cx + px * 9)
+        sp1y = int(cy + py * 9)
+        sp2x = int(cx - px * 9)
+        sp2y = int(cy - py * 9)
+        pygame.draw.circle(screen, light_uni, (sp1x, sp1y), 5)
+        pygame.draw.circle(screen, light_uni, (sp2x, sp2y), 5)
+
+        # Badge — gold dot on the chest (slightly to the left)
+        bx = int(cx + dx * 3 + px * 3)
+        by = int(cy + dy * 3 + py * 3)
+        pygame.draw.circle(screen, (255, 215, 0), (bx, by), 2)
+
+        # Belt line — dark stripe across the body perpendicular to facing
+        b1x = int(cx + px * 10 - dx * 1)
+        b1y = int(cy + py * 10 - dy * 1)
+        b2x = int(cx - px * 10 - dx * 1)
+        b2y = int(cy - py * 10 - dy * 1)
+        pygame.draw.line(screen, dark_uni, (b1x, b1y), (b2x, b2y), 3)
+
+        # Body outline
+        pygame.draw.circle(screen, dark_uni, (cx, cy), 11, 2)
+
+        # Neck — small circle between body and head
+        nx = int(cx + dx * 10)
+        ny = int(cy + dy * 10)
+        pygame.draw.circle(screen, (190, 150, 110), (nx, ny), 4)
+
+        # Head — skin colored, faces the movement direction
+        hx = int(cx + dx * 15)
+        hy = int(cy + dy * 15)
+        pygame.draw.circle(screen, (210, 170, 120), (hx, hy), 7)
+
+        # Hat — dark circle slightly further in facing direction
+        hatx = int(hx + dx * 4)
+        haty = int(hy + dy * 4)
+        pygame.draw.circle(screen, (20, 20, 20), (hatx, haty), 5)
+        # Hat brim — slightly wider flat line
+        brim1x = int(hatx + px * 6)
+        brim1y = int(haty + py * 6)
+        brim2x = int(hatx - px * 6)
+        brim2y = int(haty - py * 6)
+        pygame.draw.line(screen, (15, 15, 15),
+                         (brim1x, brim1y), (brim2x, brim2y), 3)
+
+        # Eyes — two tiny white dots on the head facing forward
+        e1x = int(hx + dx * 2 + px * 2)
+        e1y = int(hy + dy * 2 + py * 2)
+        e2x = int(hx + dx * 2 - px * 2)
+        e2y = int(hy + dy * 2 - py * 2)
+        pygame.draw.circle(screen, (240, 240, 240), (e1x, e1y), 2)
+        pygame.draw.circle(screen, (240, 240, 240), (e2x, e2y), 2)
+        pygame.draw.circle(screen, (10, 10, 10), (e1x, e1y), 1)
+        pygame.draw.circle(screen, (10, 10, 10), (e2x, e2y), 1)
 
     def draw_detection(self, screen):
         if self.suspicion <= 0:
