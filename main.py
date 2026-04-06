@@ -23,6 +23,8 @@ from title_screen import TitleScreen
 from inventory_panel import InventoryPanel
 from blackjack import Blackjack
 from day_transition import DayTransition
+from sound_manager import SoundManager
+from case_opening import RARITIES
 
 
 class Game:
@@ -65,6 +67,8 @@ class Game:
         self.upgrade_manager = UpgradeManager()
         self.inventory_panel = InventoryPanel()
         self.day_transition  = DayTransition()
+        self.sounds          = SoundManager()
+        self.title_screen._sound_manager = self.sounds
 
     def _init_guards(self):
         """Spawn the starting guards and reset the difficulty timer."""
@@ -113,6 +117,31 @@ class Game:
             self.day_system.warned = True
 
         self.day_transition.update()
+
+        # Play alert sound when any guard starts chasing
+        for guard in self.guards:
+            if guard.state == "chase" and not guard._chase_sound_played:
+                self.sounds.play("alert", volume=0.6)
+                guard._chase_sound_played = True
+            elif guard.state != "chase":
+                guard._chase_sound_played = False
+
+        # Win/lose sound — triggered by message content
+        for m in self.messages.messages:
+            if m.get("_sound_played"):
+                continue
+            if any(w in m["text"] for w in ("WIN", "JACKPOT", "Paid")):
+                self.sounds.play("win", volume=0.7)
+                m["_sound_played"] = True
+            elif any(w in m["text"] for w in ("Lost", "No win", "failed")):
+                self.sounds.play("lose", volume=0.6)
+                m["_sound_played"] = True
+
+        # Sync sound settings from title screen
+        self.sounds.enabled = self.title_screen.sound_enabled
+        self.sounds.master_volume = self.title_screen.sfx_volume
+        self.sounds.music_volume = self.title_screen.music_volume
+        self.sounds.update_music_volume()
 
     # ==================================================================
     #  EVENT HANDLING
@@ -217,6 +246,7 @@ class Game:
             self.dice_game.reset()
             self.state = STATE_EXPLORE
         elif result == "played":
+            self.sounds.play("chip", volume=0.8)
             reduction = getattr(self.player, "cooldown_reduction", 0.0)
             self.casino_map.cooldowns["dice"] = int(240 * (1 - reduction))
 
@@ -235,6 +265,7 @@ class Game:
             self.roulette.reset()
             self.state = STATE_EXPLORE
         elif result == "played":
+            self.sounds.play("spin", volume=0.9)
             reduction = getattr(self.player, "cooldown_reduction", 0.0)
             self.casino_map.cooldowns["roulette"] = int(360 * (1 - reduction))
 
@@ -254,6 +285,7 @@ class Game:
             self.slot_machine.reset()
             self.state = STATE_EXPLORE
         elif result == "played":
+            self.sounds.play("spin", volume=0.7)
             reduction = getattr(self.player, "cooldown_reduction", 0.0)
             self.casino_map.cooldowns["slots"] = int(300 * (1 - reduction))
 
@@ -270,6 +302,8 @@ class Game:
         if result == "exit":
             self.case_opening.reset()
             self.state = STATE_EXPLORE
+        elif result == "played":
+            self.sounds.play("spin", volume=0.7)
 
     def _events_blackjack(self, event):
         if (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE
@@ -277,9 +311,32 @@ class Game:
                 and self.casino_map.cooldowns["blackjack"] > 0):
             self.messages.add_ui("Blackjack table cooling down!")
             return
+
+        prev_phase = self.blackjack.phase
+
         result = self.blackjack.handle_input(
             event, self.player, self.score_system, self.messages, self.shop
         )
+
+        # Card deal sound — fires when round starts
+        if result == "played":
+            self.sounds.play("card_deal", volume=0.7)
+
+        # Hit sound — fires when player draws a card
+        if (event.type == pygame.KEYDOWN and
+                event.key in (pygame.K_h, pygame.K_d) and
+                prev_phase == "playing"):
+            self.sounds.play("card_deal", volume=0.6)
+
+        # Win/lose sound — fires the moment result appears
+        just_resolved = prev_phase != "result" and self.blackjack.phase == "result"
+        if just_resolved:
+            any_win = any(w for w in self.blackjack.result_wins if w)
+            if any_win:
+                self.sounds.play("win", volume=0.8)
+            else:
+                self.sounds.play("lose", volume=0.7)
+
         if result == "exit":
             self.blackjack.reset()
             self.state = STATE_EXPLORE
@@ -288,6 +345,8 @@ class Game:
         result = self.shop.handle_input(event, self.player)
         if result == "exit":
             self.state = STATE_EXPLORE
+        elif result == "ok":
+            self.sounds.play("buy", volume=0.8)
 
     def _events_upgrade(self, event):
         """Mouse-clickable upgrade screen."""
@@ -340,7 +399,6 @@ class Game:
 
     def _handle_interaction(self):
         zone = self.casino_map.check_interaction(self.player.get_rect())
-        reduction = getattr(self.player, "cooldown_reduction", 0.0)
 
         if zone == "slots":
             self.slot_machine.reset()
@@ -362,9 +420,11 @@ class Game:
             self.state = STATE_BLACKJACK
 
         elif zone == "shop":
+            self.sounds.play("chip", volume=0.6)
             self.state = STATE_SHOP
 
         elif zone == "exit":
+            self.sounds.play("exit_zone", volume=0.7)
             self._handle_exit()
 
     def _handle_exit(self):
@@ -381,6 +441,7 @@ class Game:
                 debt_paid=debt_paid,
                 next_debt=self.day_system.debt + max(10, 60 - self.player.debt_reduction)
             )
+            self.sounds.play("day_complete", volume=0.8)
             self.state = STATE_EXPLORE
         else:
             self.state = STATE_GAME_OVER
@@ -407,37 +468,89 @@ class Game:
             self.title_screen.update()
 
         elif self.state == STATE_SLOTS:
+            was_spinning = self.slot_machine.phase == "spinning"
             self.slot_machine.update(
                 self.player, self.score_system, self.messages, self.shop
             )
+            # Detect the exact frame the result appears
+            just_resolved = was_spinning and self.slot_machine.phase == "result"
+            if just_resolved:
+                if self.slot_machine.result_win:
+                    self.sounds.play("win", volume=0.8)
+                else:
+                    self.sounds.play("lose", volume=0.7)
 
         elif self.state == STATE_ROULETTE:
+            prev_phase = self.roulette.phase
             self.roulette.update(self.player, self.score_system, self.shop)
-
+            # Win/lose sound — fires the exact frame phase flips to result
+            just_resolved = prev_phase == "spinning" and self.roulette.phase == "result"
+            if just_resolved:
+                if self.roulette.result_win:
+                    self.sounds.play("win", volume=0.8)
+                else:
+                    self.sounds.play("lose", volume=0.7)
 
         elif self.state == STATE_DICE:
+            prev_counter = self.dice_game.counter_number
+            prev_rolling = self.dice_game.rolling
             self.dice_game.update(self.player, self.score_system, self.messages)
-            # Set cooldown the moment the roll finishes (rolling flips to False)
-            if (not self.dice_game.rolling
-                    and self.dice_game.final_roll != 0
-                    and self.casino_map.cooldowns["dice"] == 0):
+
+            # Tick sound — fires every 4 counter units while rolling
+            if (self.dice_game.rolling and
+                    self.dice_game.counter_number != prev_counter):
+                if self.dice_game.counter_number % 4 == 0:
+                    self.sounds.play("chip", volume=0.3)
+
+            # Win/lose sound — fires the frame rolling stops
+            just_resolved = prev_rolling and not self.dice_game.rolling
+            if just_resolved:
+                if self.dice_game.flash_color == (60, 220, 100):
+                    self.sounds.play("win", volume=0.8)
+                else:
+                    self.sounds.play("lose", volume=0.7)
+
+            if just_resolved:
                 reduction = getattr(self.player, "cooldown_reduction", 0.0)
                 self.casino_map.cooldowns["dice"] = int(240 * (1 - reduction))
 
         elif self.state == STATE_CASE:
+            prev_phase = self.case_opening.phase
+            prev_scroll = self.case_opening.scroll_x
             result = self.case_opening.update(
                 self.player, self.score_system, self.messages, self.shop
             )
+            # Spin sound — fires the frame spinning starts
+            just_started = prev_phase != "spinning" and self.case_opening.phase == "spinning"
+            if just_started:
+                self.sounds.play("spin", volume=0.7)
+            if self.case_opening.phase == "spinning":
+                prev_item = int(prev_scroll) // 120
+                curr_item = int(self.case_opening.scroll_x) // 120
+                if curr_item != prev_item:
+                    self.sounds.play("chip", volume=0.4)
+            # Win/lose sound — fires the frame result appears
+            just_resolved = prev_phase == "spinning" and self.case_opening.phase == "result"
+            if just_resolved:
+                won = RARITIES[self.case_opening.result_index]["mult"] > 1.0
+                if won:
+                    self.sounds.play("win", volume=0.8)
+                else:
+                    self.sounds.play("lose", volume=0.7)
             if result == "result_ready":
                 reduction = getattr(self.player, "cooldown_reduction", 0.0)
                 self.casino_map.cooldowns["case"] = int(180 * (1 - reduction))
 
-
         elif self.state == STATE_BLACKJACK:
+            prev_deal_tick = self.blackjack.deal_tick
             self.blackjack.update(
                 self.player, self.score_system, self.messages, self.shop
             )
-            # Check if round just ended this frame
+            # Card deal sound for dealer's drawn cards during dealer_play
+            if (self.blackjack.animating and
+                    self.blackjack.deal_tick != prev_deal_tick and
+                    self.blackjack.deal_tick == 1):
+                self.sounds.play("card_deal", volume=0.7)
             if self.blackjack.phase == "result" and self.casino_map.cooldowns["blackjack"] == 0:
                 reduction = getattr(self.player, "cooldown_reduction", 0.0)
                 self.casino_map.cooldowns["blackjack"] = int(240 * (1 - reduction))
@@ -462,6 +575,42 @@ class Game:
 
         self._update_difficulty()
         self._update_guards()
+
+        # Check if player is actually moving this frame
+        keys = pygame.key.get_pressed()
+        moving = (keys[pygame.K_w] or keys[pygame.K_s] or
+                  keys[pygame.K_a] or keys[pygame.K_d])
+        self.sounds.update_footstep(moving)
+        self._update_music()
+
+    def _update_music(self):
+        """
+        Switches music track based on current game state.
+        Only calls switch_music() when the desired track actually changes
+        — prevents load() from being called every frame which causes freezing.
+        """
+        any_chasing = any(g.state == "chase" for g in self.guards)
+
+        # Decide which track should be playing right now
+        if self.state in (STATE_GAME_OVER, STATE_TITLE):
+            desired = None
+        elif self.day_transition.active:
+            desired = "victory"
+        elif self.state == STATE_EXPLORE and any_chasing:
+            desired = "chase"
+        elif self.state in (STATE_EXPLORE, STATE_SLOTS, STATE_DICE,
+                            STATE_ROULETTE, STATE_CASE, STATE_BLACKJACK,
+                            STATE_SHOP, STATE_UPGRADE, STATE_MENU):
+            desired = "casino"
+        else:
+            desired = self.sounds.current_music  # no change
+
+        # Only act when the desired track is different from what's playing
+        if desired != self.sounds.current_music:
+            if desired is None:
+                self.sounds.stop_music(fade_ms=800)
+            else:
+                self.sounds.switch_music(desired)
 
     def _update_difficulty(self):
         self.difficulty_timer += 1
@@ -494,6 +643,7 @@ class Game:
             if self.player.get_rect().colliderect(
                 pygame.Rect(guard.x, guard.y, 32, 32)
             ):
+                self.sounds.play("game_over", volume=0.9)
                 self.state = STATE_GAME_OVER
 
     # ==================================================================

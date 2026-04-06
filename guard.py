@@ -41,6 +41,7 @@ class Guard:
 
         self.sprite = pygame.image.load("sprites/guard.png")
         self.sprite = pygame.transform.scale(self.sprite, (32, 32))
+        self._chase_sound_played = False
 
     def move(self, walls=None):
         old_x, old_y = self.x, self.y
@@ -299,6 +300,7 @@ class Guard:
             "normal": 160,
         }
         self.chase_distance = chase_distances.get(self.type, 160)
+        self._chase_sound_played = False
 
     def update_speed(self, difficulty):
         self.speed += difficulty * 0.2

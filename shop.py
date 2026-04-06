@@ -171,7 +171,7 @@ class Shop:
                     self.feedback       = msg
                     self.feedback_ok    = (status == "ok")
                     self.feedback_timer = 140
-                    return
+                    return status
 
             if self._exit_rect().collidepoint(mx, my):
                 return "exit"

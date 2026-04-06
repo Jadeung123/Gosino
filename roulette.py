@@ -99,6 +99,12 @@ class Roulette:
                         self.bet_type      = "number"
                         return
                 # Quick bets
+                if hasattr(self, '_color_rects'):
+                    for btype, rect in self._color_rects.items():
+                        if rect.collidepoint(mx, my):
+                            self.bet_type = btype
+                            self.chosen_number = None
+                            return
                 for label, rect in self._quick_rects:
                     if rect.collidepoint(mx, my):
                         if label == "MIN":    self.bet = 1
@@ -501,11 +507,13 @@ class Roulette:
         # ── R/B buttons — each exactly half grid width ────────────────
         btn_y  = div1_y + 8
         half_w = (GRID_W - GAP) // 2
+        self._color_rects = {}
         for label, btype, bx in [
             ("R - RED",   "red",   tx),
             ("B - BLACK", "black", tx + half_w + GAP),
         ]:
             br  = pygame.Rect(bx, btn_y, half_w, 30)
+            self._color_rects[btype] = br
             sel = (self.bet_type == btype)
             bc  = {"red":(145,34,34),"black":(30,30,30)}[btype]
             if sel: bc = tuple(min(255,c+50) for c in bc)

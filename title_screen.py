@@ -1,4 +1,3 @@
-# title_screen.py
 import pygame
 import math
 from constants import *
@@ -16,45 +15,115 @@ class TitleScreen:
         self.glow_phase = 0
         self._current   = "title"
 
-        self.fullscreen = DEFAULT_FULLSCREEN
-        self.show_fps   = DEFAULT_SHOW_FPS
+        self.fullscreen    = DEFAULT_FULLSCREEN
+        self.show_fps      = DEFAULT_SHOW_FPS
 
-        # Title buttons — centred at x=400
+        # Sound settings — two independent channels
+        self.sound_enabled = True
+        self.sfx_volume    = 0.8   # controls all sound effects
+        self.music_volume  = 0.5   # controls background music
+
+        # Slider drag state
+        self.dragging_sfx   = False
+        self.dragging_music = False
+
+        # Slider track rects — defined once, used in draw + input
+        self.sfx_slider_rect   = pygame.Rect(420, 348, 180, 8)
+        self.music_slider_rect = pygame.Rect(420, 408, 180, 8)
+
+        # Title buttons
         self.buttons = {
             "play":     pygame.Rect(325, 300, 150, 50),
             "settings": pygame.Rect(325, 368, 150, 50),
             "quit":     pygame.Rect(325, 436, 150, 50),
         }
 
-        # Settings buttons
+        # Settings buttons — only toggles, sliders handled separately
         self.settings_buttons = {
-            "fullscreen": pygame.Rect(280, 250, 240, 48),
-            "show_fps":   pygame.Rect(280, 316, 240, 48),
+            "fullscreen": pygame.Rect(200, 230, 180, 40),
+            "show_fps":   pygame.Rect(420, 230, 180, 40),
+            "sound":      pygame.Rect(200, 340, 180, 40),
             "back":       pygame.Rect(325, 530, 150, 48),
         }
+        self._sound_manager = None
 
     # ------------------------------------------------------------------
-    def handle_input(self, event, screen):
-        if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
-            return None
-        mx, my = pygame.mouse.get_pos()
 
+    def handle_input(self, event, screen):
         if self._current == "title":
+            if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
+                return None
+            mx, my = pygame.mouse.get_pos()
             if self.buttons["play"].collidepoint(mx, my):     return "play"
             if self.buttons["settings"].collidepoint(mx, my): self._current = "settings"
             if self.buttons["quit"].collidepoint(mx, my):     return "quit"
 
         elif self._current == "settings":
-            if self.settings_buttons["fullscreen"].collidepoint(mx, my):
-                self.fullscreen = not self.fullscreen
-                self._apply_fullscreen(screen)
-            if self.settings_buttons["show_fps"].collidepoint(mx, my):
-                self.show_fps = not self.show_fps
-            if self.settings_buttons["back"].collidepoint(mx, my):
-                self._current = "title"
-                return "back_to_game"
+            mx, my = pygame.mouse.get_pos()
+
+            # ── Slider drag start ──────────────────────────────────────
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                # SFX slider
+                sfx_handle = pygame.Rect(
+                    self.sfx_slider_rect.x + int(self.sfx_volume * self.sfx_slider_rect.width) - 10,
+                    self.sfx_slider_rect.y - 8, 20, 26
+                )
+                if sfx_handle.collidepoint(mx, my) or self.sfx_slider_rect.collidepoint(mx, my):
+                    self.dragging_sfx = True
+                    self._update_sfx_from_mouse(mx)
+
+                # Music slider
+                music_handle = pygame.Rect(
+                    self.music_slider_rect.x + int(self.music_volume * self.music_slider_rect.width) - 10,
+                    self.music_slider_rect.y - 8, 20, 26
+                )
+                if music_handle.collidepoint(mx, my) or self.music_slider_rect.collidepoint(mx, my):
+                    self.dragging_music = True
+                    self._update_music_from_mouse(mx)
+
+                # Toggle buttons
+                if self.settings_buttons["fullscreen"].collidepoint(mx, my):
+                    self.fullscreen = not self.fullscreen
+                    self._apply_fullscreen(screen)
+                if self.settings_buttons["show_fps"].collidepoint(mx, my):
+                    self.show_fps = not self.show_fps
+                if self.settings_buttons["sound"].collidepoint(mx, my):
+                    self.sound_enabled = not self.sound_enabled
+                    if self._sound_manager:
+                        self._sound_manager.enabled = self.sound_enabled
+                        self._sound_manager.update_music_volume()
+                if self.settings_buttons["back"].collidepoint(mx, my):
+                    self._current = "title"
+                    return "back_to_game"
+
+            # ── Slider drag move ───────────────────────────────────────
+            elif event.type == pygame.MOUSEMOTION:
+                if self.dragging_sfx:
+                    self._update_sfx_from_mouse(mx)
+                    if self._sound_manager:
+                        self._sound_manager.master_volume = self.sfx_volume
+                if self.dragging_music:
+                    self._update_music_from_mouse(mx)
+                    if self._sound_manager:
+                        self._sound_manager.music_volume = self.music_volume
+                        self._sound_manager.update_music_volume()
+            # ── Slider drag release ────────────────────────────────────
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                self.dragging_sfx   = False
+                self.dragging_music = False
 
         return None
+
+    # ------------------------------------------------------------------
+
+    def _update_sfx_from_mouse(self, mx):
+        ratio = (mx - self.sfx_slider_rect.x) / self.sfx_slider_rect.width
+        self.sfx_volume = max(0.0, min(1.0, round(ratio, 2)))
+
+    def _update_music_from_mouse(self, mx):
+        ratio = (mx - self.music_slider_rect.x) / self.music_slider_rect.width
+        self.music_volume = max(0.0, min(1.0, round(ratio, 2)))
 
     def _apply_fullscreen(self, screen):
         if self.fullscreen:
@@ -63,11 +132,13 @@ class TitleScreen:
             pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     # ------------------------------------------------------------------
+
     def update(self):
         self.bg_offset  = (self.bg_offset + 0.4) % 40
         self.glow_phase += 0.04
 
     # ------------------------------------------------------------------
+
     def draw(self, screen):
         if self._current == "title":
             self._draw_title(screen)
@@ -76,17 +147,14 @@ class TitleScreen:
 
     def _draw_title(self, screen):
         screen.fill((10, 10, 20))
-
-        # Animated diagonal stripes
         for i in range(-SCREEN_HEIGHT, SCREEN_WIDTH + SCREEN_HEIGHT, 40):
             x = i + self.bg_offset
             pygame.draw.line(screen, (18, 18, 32),
                              (int(x), 0), (int(x + SCREEN_HEIGHT), SCREEN_HEIGHT), 18)
 
-        # Glowing title
-        glow  = int(abs(math.sin(self.glow_phase)) * 55)
-        gc    = (255, min(215 + glow, 255), 0)
-        t1    = self.font_title.render("GOSINO", True, gc)
+        glow = int(abs(math.sin(self.glow_phase)) * 55)
+        gc   = (255, min(215 + glow, 255), 0)
+        t1   = self.font_title.render("GOSINO", True, gc)
         screen.blit(t1, t1.get_rect(center=(SCREEN_WIDTH // 2, 200)))
 
         tag = self.font_sm.render(
@@ -94,7 +162,6 @@ class TitleScreen:
             True, (155, 155, 155))
         screen.blit(tag, tag.get_rect(center=(SCREEN_WIDTH // 2, 268)))
 
-        # Buttons — plain text labels, no unicode
         self._btn(screen, self.buttons["play"],     "PLAY",     (42, 140, 60))
         self._btn(screen, self.buttons["settings"], "SETTINGS", (42, 62,  140))
         self._btn(screen, self.buttons["quit"],     "QUIT",     (130, 36, 36))
@@ -106,34 +173,94 @@ class TitleScreen:
         screen.fill((12, 12, 22))
 
         t = self.font_sub.render("SETTINGS", True, (255, 215, 0))
-        screen.blit(t, t.get_rect(center=(SCREEN_WIDTH // 2, 152)))
-        pygame.draw.line(screen, (55, 55, 78), (200, 194), (600, 194), 2)
+        screen.blit(t, t.get_rect(center=(SCREEN_WIDTH // 2, 80)))
+        pygame.draw.line(screen, (55, 55, 78), (150, 110), (650, 110), 1)
 
-        fs_lbl  = "Fullscreen:   " + ("ON" if self.fullscreen else "OFF")
+        # ── SECTION 1: Display ────────────────────────────────────────
+        sec1 = self.font_sm.render("DISPLAY", True, (100, 100, 140))
+        screen.blit(sec1, sec1.get_rect(center=(SCREEN_WIDTH // 2, 195)))
+        pygame.draw.line(screen, (40, 40, 60), (200, 210), (600, 210), 1)
+
+        fs_lbl  = "Fullscreen:  " + ("ON" if self.fullscreen else "OFF")
         fs_col  = (100, 255, 120) if self.fullscreen else (200, 78, 78)
-        fps_lbl = "Show FPS:   "   + ("ON" if self.show_fps else "OFF")
+        fps_lbl = "Show FPS:  "   + ("ON" if self.show_fps else "OFF")
         fps_col = (100, 255, 120) if self.show_fps else (200, 78, 78)
-
         self._btn(screen, self.settings_buttons["fullscreen"],
-                  fs_lbl,  (38, 38, 58), text_color=fs_col)
+                  fs_lbl, (38, 38, 58), text_color=fs_col)
         self._btn(screen, self.settings_buttons["show_fps"],
                   fps_lbl, (38, 38, 58), text_color=fps_col)
 
-        # Keybinds — two columns
-        keys_l = ["WASD  -  Move", "E  -  Interact", "ESC  -  Pause menu"]
+        # ── SECTION 2: Sound ──────────────────────────────────────────
+        sec2 = self.font_sm.render("SOUND", True, (100, 100, 140))
+        screen.blit(sec2, sec2.get_rect(center=(SCREEN_WIDTH // 2, 305)))
+        pygame.draw.line(screen, (40, 40, 60), (200, 320), (600, 320), 1)
+
+        # Sound ON/OFF toggle
+        snd_lbl = "Sound:   " + ("ON" if self.sound_enabled else "OFF")
+        snd_col = (100, 255, 120) if self.sound_enabled else (200, 78, 78)
+        self._btn(screen, self.settings_buttons["sound"],
+                  snd_lbl, (38, 38, 58), text_color=snd_col)
+
+        # SFX slider
+        self._draw_slider(screen, self.sfx_slider_rect,
+                          self.sfx_volume, "SFX", 328)
+
+        # Music slider
+        self._draw_slider(screen, self.music_slider_rect,
+                          self.music_volume, "Music", 388)
+
+        # ── SECTION 3: Controls ───────────────────────────────────────
+        sec3 = self.font_sm.render("CONTROLS", True, (100, 100, 140))
+        screen.blit(sec3, sec3.get_rect(center=(SCREEN_WIDTH // 2, 440)))
+        pygame.draw.line(screen, (40, 40, 60), (200, 455), (600, 455), 1)
+
+        keys_l = ["WASD  -  Move", "E  -  Interact", "ESC  -  Pause"]
         keys_r = ["SPACE  -  Action", "F1/F2/F3  -  Use item", "ENTER  -  Exit screen"]
         for i, k in enumerate(keys_l):
-            screen.blit(self.font_sm.render(k, True, (110, 110, 110)), (220, 390 + i * 22))
+            screen.blit(self.font_sm.render(k, True, (110, 110, 110)),
+                        (220, 465 + i * 22))
         for i, k in enumerate(keys_r):
-            screen.blit(self.font_sm.render(k, True, (110, 110, 110)), (430, 390 + i * 22))
+            screen.blit(self.font_sm.render(k, True, (110, 110, 110)),
+                        (430, 465 + i * 22))
 
+        pygame.draw.line(screen, (40, 40, 60), (200, 515), (600, 515), 1)
         self._btn(screen, self.settings_buttons["back"], "BACK", (46, 46, 88))
 
+    # ------------------------------------------------------------------
+
+    def _draw_slider(self, screen, rect, value, label, label_y):
+        """Draws a labelled slider track, fill, handle, and percentage."""
+        # Label on the left
+        screen.blit(self.font_sm.render(f"{label}:", True, (160, 160, 160)),
+                    (200, label_y + 2))
+
+        # Percentage on the right of handle
+        pct  = int(value * 100)
+        screen.blit(self.font_sm.render(f"{pct}%", True, (255, 215, 0)),
+                    (rect.right + 14, rect.y - 4))
+
+        # Track background
+        pygame.draw.rect(screen, (40, 40, 60), rect, border_radius=5)
+
+        # Filled portion
+        fill_w = int(value * rect.width)
+        if fill_w > 0:
+            pygame.draw.rect(screen, (100, 180, 255),
+                             (rect.x, rect.y, fill_w, rect.height),
+                             border_radius=5)
+
+        # Handle circle
+        handle_x = rect.x + fill_w
+        pygame.draw.circle(screen, (255, 255, 255), (handle_x, rect.centery), 9)
+        pygame.draw.circle(screen, (100, 180, 255), (handle_x, rect.centery), 9, 2)
+
+    # ------------------------------------------------------------------
+
     def _btn(self, screen, rect, text, bg, text_color=(255, 255, 255)):
-        mx, my  = pygame.mouse.get_pos()
-        hov     = rect.collidepoint(mx, my)
-        color   = tuple(min(255, c + 28) for c in bg) if hov else bg
-        border  = (255, 215, 0) if hov else (70, 70, 110)
+        mx, my = pygame.mouse.get_pos()
+        hov    = rect.collidepoint(mx, my)
+        color  = tuple(min(255, c + 28) for c in bg) if hov else bg
+        border = (255, 215, 0) if hov else (70, 70, 110)
         pygame.draw.rect(screen, color,  rect, border_radius=8)
         pygame.draw.rect(screen, border, rect, 2, border_radius=8)
         s = self.font.render(text, True, text_color)
