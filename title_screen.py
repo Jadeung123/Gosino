@@ -56,7 +56,9 @@ class TitleScreen:
                 return None
             mx, my = pygame.mouse.get_pos()
             if self.buttons["play"].collidepoint(mx, my):     return "play"
-            if self.buttons["settings"].collidepoint(mx, my): self._current = "settings"
+            if self.buttons["settings"].collidepoint(mx, my):
+                self._current = "settings"
+                return "open_settings"
             if self.buttons["stats"].collidepoint(mx, my):    return "stats"
             if self.buttons["quit"].collidepoint(mx, my):     return "quit"
 

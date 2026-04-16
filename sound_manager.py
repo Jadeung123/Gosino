@@ -140,5 +140,6 @@ class SoundManager:
 
     def toggle(self):
         self.enabled = not self.enabled
-        self.update_music_volume()
+        if not self.enabled:
+            self._music_channel.fadeout(400)
         return self.enabled

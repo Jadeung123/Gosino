@@ -74,6 +74,7 @@ class Game:
         self.stats           = StatsLogger()
         self.stats.set_day_start_money(self.player.money)
         self.stats_screen    = StatsScreen()
+        self.sounds.switch_music("casino")
 
     def _init_guards(self):
         """Spawn the starting guards and reset the difficulty timer."""
@@ -146,8 +147,11 @@ class Game:
         # Sync sound settings from title screen
         self.sounds.enabled = self.title_screen.sound_enabled
         self.sounds.master_volume = self.title_screen.sfx_volume
-        self.sounds.music_volume = self.title_screen.music_volume
-        self.sounds.update_music_volume()
+
+        # Only update music volume if it actually changed — avoids redundant calls
+        if self.sounds.music_volume != self.title_screen.music_volume:
+            self.sounds.music_volume = self.title_screen.music_volume
+            self.sounds.update_music_volume()
 
         if self.state != STATE_TITLE:
             self.stats.update(
@@ -181,6 +185,8 @@ class Game:
                     self.state = STATE_STATS
                 elif result == "back_to_game":
                     self.state = self._settings_return_state
+                elif result == "open_settings":
+                    self._settings_return_state = STATE_TITLE
                 continue
 
             # --- Game over screen ---
@@ -442,10 +448,7 @@ class Game:
             elif self._menu_stats_rect().collidepoint(mx, my):
                 self.state = STATE_STATS
 
-    def _menu_stats_rect(self):
-        return pygame.Rect(SCREEN_WIDTH - 250, 560, 220, 46)
-
-                # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     def _handle_interaction(self):
         zone = self.casino_map.check_interaction(self.player.get_rect())
@@ -528,6 +531,8 @@ class Game:
     # ==================================================================
 
     def _update_state(self):
+        self._update_music()
+
         if self.state == STATE_TITLE:
             self.title_screen.update()
 
@@ -742,7 +747,7 @@ class Game:
         any_chasing = any(g.state == "chase" for g in self.guards)
 
         # Decide which track should be playing right now
-        if self.state in (STATE_GAME_OVER, STATE_TITLE):
+        if self.state == STATE_GAME_OVER:
             desired = None
         elif self.day_transition.active:
             desired = "victory"
@@ -761,6 +766,12 @@ class Game:
                 self.sounds.stop_music(fade_ms=800)
             else:
                 self.sounds.switch_music(desired)
+        elif (self.sounds.enabled and
+              desired is not None and
+              not self.sounds._music_channel.get_busy()):
+            # Channel stopped (e.g. after unmute) — restart the track
+            self.sounds.current_music = None
+            self.sounds.switch_music(desired)
 
     def _update_difficulty(self):
         self.difficulty_timer += 1
@@ -1198,13 +1209,16 @@ class Game:
     # ------------------------------------------------------------------
 
     def _menu_resume_rect(self):
-        return pygame.Rect(SCREEN_WIDTH - 250, 380, 220, 46)
+        return pygame.Rect(SCREEN_WIDTH - 250, 360, 220, 42)
 
     def _menu_main_menu_rect(self):
-        return pygame.Rect(SCREEN_WIDTH - 250, 440, 220, 46)
+        return pygame.Rect(SCREEN_WIDTH - 250, 410, 220, 42)
 
     def _menu_settings_rect(self):
-        return pygame.Rect(SCREEN_WIDTH - 250, 500, 220, 46)
+        return pygame.Rect(SCREEN_WIDTH - 250, 460, 220, 42)
+
+    def _menu_stats_rect(self):
+        return pygame.Rect(SCREEN_WIDTH - 250, 510, 220, 42)
 
     def _draw_menu_overlay(self):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))

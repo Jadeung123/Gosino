@@ -117,3 +117,5 @@ timestamp,day,item_name,item_type,item_cost,player_money_after
 2026-04-16 14:00:45,17,Card Counter,permanent,400,131782558
 2026-04-16 14:00:54,18,Card Counter,permanent,400,131783348
 2026-04-16 14:00:54,18,Whale Status,permanent,600,131782748
+2026-04-16 18:58:00,2,Hot Streak,consumable,180,220
+2026-04-16 18:58:00,2,Loaded Dice,consumable,200,20
