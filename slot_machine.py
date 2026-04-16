@@ -96,7 +96,7 @@ class SlotMachine:
                     if rect.collidepoint(mx, my):
                         if label == "MIN":    self.bet = 1
                         elif label == "HALF": self.bet = max(1, self.bet // 2)
-                        elif label == "2X":   self.bet = min(player.money, self.bet * 2)
+                        elif label == "DOUBLE":   self.bet = min(player.money, self.bet * 2)
                         elif label == "MAX":  self.bet = player.money
                 for delta, rect in self._adj_rects:
                     if rect.collidepoint(mx, my):
@@ -294,12 +294,14 @@ class SlotMachine:
         # ── Quick bets (dice-style) ───────────────────────────────────
         pygame.draw.line(screen, (38,38,58), (MX, 408), (MR, 408), 1)
         screen.blit(self.font_sm.render("Quick:", True, (100,100,100)), (MX+4, 418))
+        mx_pos, my_pos = pygame.mouse.get_pos()
         for j, text in enumerate(self.quick_bets):
             r = pygame.Rect(MX + 4 + j * 80, 438, 72, 24)
             self._quick_rects.append((text, r))
-            pygame.draw.rect(screen, (40,40,40), r, border_radius=3)
-            pygame.draw.rect(screen, (90,90,90), r, 1, border_radius=3)
-            ls = self.font_sm.render(text, True, (255,255,255))
+            hov = r.collidepoint(mx_pos, my_pos)
+            pygame.draw.rect(screen, (50, 50, 72) if hov else (40, 40, 40), r, border_radius=3)
+            pygame.draw.rect(screen, GOLD if hov else (90, 90, 90), r, 1, border_radius=3)
+            ls = self.font_sm.render(text, True, (255, 255, 255))
             screen.blit(ls, ls.get_rect(center=r.center))
 
         for i, (text, val) in enumerate(self.bet_buttons):

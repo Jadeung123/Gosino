@@ -452,12 +452,14 @@ class CaseOpening:
         # Quick bets
         screen.blit(self.font_sm.render("Quick:", True, (100,100,100)),
                     (MX + 4, _BOTTOM_Y + 50))
+        mx_pos, my_pos = pygame.mouse.get_pos()
         for j, text in enumerate(_QUICK_BETS):
             r = self._quick_bet_rect(j, MX)
             self._quick_rects.append((text, r))
-            pygame.draw.rect(screen, (40,40,40), r, border_radius=3)
-            pygame.draw.rect(screen, (90,90,90), r, 1, border_radius=3)
-            ls = self.font_sm.render(text, True, (255,255,255))
+            hov = r.collidepoint(mx_pos, my_pos)
+            pygame.draw.rect(screen, (50, 50, 72) if hov else (40, 40, 40), r, border_radius=3)
+            pygame.draw.rect(screen, GOLD if hov else (90, 90, 90), r, 1, border_radius=3)
+            ls = self.font_sm.render(text, True, (255, 255, 255))
             screen.blit(ls, ls.get_rect(center=r.center))
 
         # Fine adjustment buttons

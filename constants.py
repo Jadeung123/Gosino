@@ -23,6 +23,7 @@ STATE_MENU      = "menu"
 STATE_GAME_OVER = "game_over"
 STATE_TITLE     = "title"
 STATE_SETTINGS  = "settings"
+STATE_STATS     = "stats"
 
 DEFAULT_FPS        = 60
 DEFAULT_FULLSCREEN = False

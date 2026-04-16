@@ -14,7 +14,7 @@ class Player:
         self.base_speed = 4
         self.luck   = 0
         self.stealth = 0
-        self.money  = 100000000
+        self.money  = 500
         self.clothing = []
 
         # Permanent upgrade attributes (set by shop)

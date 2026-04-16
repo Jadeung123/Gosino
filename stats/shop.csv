@@ -1,0 +1,119 @@
+timestamp,day,item_name,item_type,item_cost,player_money_after
+2026-04-15 16:43:03,1,Card Counter,permanent,400,872
+2026-04-15 16:55:14,1,Card Counter,permanent,400,100
+2026-04-15 16:55:15,1,Insurance,consumable,100,0
+2026-04-15 18:01:08,1,Card Counter,permanent,400,110
+2026-04-15 19:56:17,1,Lucky Charm,consumable,150,350
+2026-04-15 19:58:49,2,Hot Streak,consumable,180,12354
+2026-04-15 19:58:49,2,Insurance,consumable,100,12254
+2026-04-15 19:58:50,2,Whale Status,permanent,600,11654
+2026-04-15 19:58:50,2,Card Counter,permanent,400,11254
+2026-04-15 19:59:16,3,Whale Status,permanent,600,157546
+2026-04-15 19:59:16,3,Card Counter,permanent,400,157146
+2026-04-15 19:59:16,3,Insurance,consumable,100,157046
+2026-04-15 20:03:40,2,Card Counter,permanent,400,347
+2026-04-16 13:00:25,1,Card Counter,permanent,400,110
+2026-04-16 13:00:25,1,Insurance,consumable,100,10
+2026-04-16 13:04:07,1,Loaded Dice,consumable,200,300
+2026-04-16 13:05:15,1,Card Counter,permanent,400,3400
+2026-04-16 13:05:16,1,Whale Status,permanent,600,2800
+2026-04-16 13:05:16,1,Loaded Dice,consumable,200,2600
+2026-04-16 13:05:16,1,Insurance,consumable,100,2500
+2026-04-16 13:07:29,3,Card Counter,permanent,400,6796
+2026-04-16 13:07:29,3,Loaded Dice,consumable,200,6596
+2026-04-16 13:07:29,3,Whale Status,permanent,600,5996
+2026-04-16 13:07:29,3,Insurance,consumable,100,5896
+2026-04-16 13:08:10,4,Whale Status,permanent,600,35642
+2026-04-16 13:08:10,4,Card Counter,permanent,400,35242
+2026-04-16 13:08:10,4,Insurance,consumable,100,35142
+2026-04-16 13:08:10,4,Hot Streak,consumable,180,34962
+2026-04-16 13:10:41,6,Loaded Dice,consumable,200,77424
+2026-04-16 13:10:42,6,Whale Status,permanent,600,76824
+2026-04-16 13:10:42,6,Card Counter,permanent,400,76424
+2026-04-16 13:10:42,6,Hot Streak,consumable,180,76244
+2026-04-16 13:11:27,7,Card Counter,permanent,400,593649
+2026-04-16 13:11:27,7,Whale Status,permanent,600,593049
+2026-04-16 13:11:27,7,Lucky Charm,consumable,150,592899
+2026-04-16 13:11:37,7,Loaded Dice,consumable,200,629310
+2026-04-16 13:14:14,1,Card Counter,permanent,400,84
+2026-04-16 13:18:09,1,Lucky Charm,consumable,150,1310
+2026-04-16 13:18:22,1,Card Counter,permanent,400,3530
+2026-04-16 13:18:22,1,Whale Status,permanent,600,2930
+2026-04-16 13:18:22,1,Hot Streak,consumable,180,2750
+2026-04-16 13:20:20,2,Whale Status,permanent,600,3135
+2026-04-16 13:20:21,2,Card Counter,permanent,400,2735
+2026-04-16 13:20:21,2,Loaded Dice,consumable,200,2535
+2026-04-16 13:20:21,2,Lucky Charm,consumable,150,2385
+2026-04-16 13:25:20,1,Card Counter,permanent,400,10940
+2026-04-16 13:25:20,1,Hot Streak,consumable,180,10760
+2026-04-16 13:25:20,1,Insurance,consumable,100,10660
+2026-04-16 13:25:20,1,Whale Status,permanent,600,10060
+2026-04-16 13:26:54,2,Card Counter,permanent,400,5932
+2026-04-16 13:26:54,2,Whale Status,permanent,600,5332
+2026-04-16 13:26:55,2,Insurance,consumable,100,5232
+2026-04-16 13:28:17,3,Whale Status,permanent,600,13011
+2026-04-16 13:28:17,3,Card Counter,permanent,400,12611
+2026-04-16 13:30:30,1,Insurance,consumable,100,379
+2026-04-16 13:30:30,1,Loaded Dice,consumable,200,179
+2026-04-16 13:32:53,1,Insurance,consumable,100,635
+2026-04-16 13:33:33,1,Lucky Charm,consumable,150,350
+2026-04-16 13:33:56,1,Card Counter,permanent,400,100
+2026-04-16 13:34:10,1,Hot Streak,consumable,180,720
+2026-04-16 13:35:35,5,Card Counter,permanent,400,1790
+2026-04-16 13:35:37,5,Loaded Dice,consumable,200,1590
+2026-04-16 13:39:00,1,Loaded Dice,consumable,200,320
+2026-04-16 13:39:12,1,Lucky Charm,consumable,150,906
+2026-04-16 13:39:25,1,Whale Status,permanent,600,2118
+2026-04-16 13:39:26,1,Card Counter,permanent,400,1718
+2026-04-16 13:40:44,1,Card Counter,permanent,400,100
+2026-04-16 13:54:00,1,Hot Streak,consumable,180,1320
+2026-04-16 13:54:03,1,Loaded Dice,consumable,200,1120
+2026-04-16 13:54:19,1,Card Counter,permanent,400,6992
+2026-04-16 13:54:20,1,Whale Status,permanent,600,6392
+2026-04-16 13:54:44,2,Insurance,consumable,100,22172
+2026-04-16 13:54:44,2,Card Counter,permanent,400,21772
+2026-04-16 13:54:44,2,Whale Status,permanent,600,21172
+2026-04-16 13:54:44,2,Hot Streak,consumable,180,20992
+2026-04-16 13:54:53,3,Lucky Charm,consumable,150,20682
+2026-04-16 13:54:53,3,Card Counter,permanent,400,20282
+2026-04-16 13:54:53,3,Whale Status,permanent,600,19682
+2026-04-16 13:55:19,3,Loaded Dice,consumable,200,488535
+2026-04-16 13:55:31,4,Insurance,consumable,100,487015
+2026-04-16 13:55:32,4,Whale Status,permanent,600,486415
+2026-04-16 13:55:32,4,Card Counter,permanent,400,486015
+2026-04-16 13:56:00,4,Lucky Charm,consumable,150,57738432
+2026-04-16 13:56:30,5,Lucky Charm,consumable,150,57714142
+2026-04-16 13:56:30,5,Card Counter,permanent,400,57713742
+2026-04-16 13:56:30,5,Whale Status,permanent,600,57713142
+2026-04-16 13:56:43,6,Card Counter,permanent,400,57714052
+2026-04-16 13:56:43,6,Whale Status,permanent,600,57713452
+2026-04-16 13:56:51,7,Whale Status,permanent,600,57714152
+2026-04-16 13:56:51,7,Card Counter,permanent,400,57713752
+2026-04-16 13:57:00,8,Card Counter,permanent,400,57714642
+2026-04-16 13:57:00,8,Whale Status,permanent,600,57714042
+2026-04-16 13:57:08,9,Whale Status,permanent,600,57714722
+2026-04-16 13:57:09,9,Card Counter,permanent,400,57714322
+2026-04-16 13:57:20,9,Loaded Dice,consumable,200,57714122
+2026-04-16 13:57:20,9,Lucky Charm,consumable,150,57713972
+2026-04-16 13:57:31,10,Card Counter,permanent,400,57714842
+2026-04-16 13:57:31,10,Whale Status,permanent,600,57714242
+2026-04-16 13:57:43,10,Insurance,consumable,100,57714142
+2026-04-16 13:57:43,10,Loaded Dice,consumable,200,57713942
+2026-04-16 13:57:51,11,Card Counter,permanent,400,57714802
+2026-04-16 13:57:51,11,Whale Status,permanent,600,57714202
+2026-04-16 13:58:02,11,Hot Streak,consumable,180,57714022
+2026-04-16 13:58:16,12,Card Counter,permanent,400,57714872
+2026-04-16 13:58:16,12,Whale Status,permanent,600,57714272
+2026-04-16 13:58:26,13,Whale Status,permanent,600,57714912
+2026-04-16 13:58:26,13,Card Counter,permanent,400,57714512
+2026-04-16 13:58:39,14,Card Counter,permanent,400,57713992
+2026-04-16 13:58:40,14,Whale Status,permanent,600,57713392
+2026-04-16 13:58:52,15,Whale Status,permanent,600,131782698
+2026-04-16 13:58:52,15,Card Counter,permanent,400,131782298
+2026-04-16 14:00:31,16,Card Counter,permanent,400,131783108
+2026-04-16 14:00:31,16,Whale Status,permanent,600,131782508
+2026-04-16 14:00:45,17,Lucky Charm,consumable,150,131783558
+2026-04-16 14:00:45,17,Whale Status,permanent,600,131782958
+2026-04-16 14:00:45,17,Card Counter,permanent,400,131782558
+2026-04-16 14:00:54,18,Card Counter,permanent,400,131783348
+2026-04-16 14:00:54,18,Whale Status,permanent,600,131782748

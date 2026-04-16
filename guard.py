@@ -317,7 +317,8 @@ class Guard:
         half_angle = max(15, 35 - stealth * 3)
         return distance, half_angle
 
-    def see_player(self, player, guards, messages):
+    def see_player(self, player, guards, messages,
+               stats=None, day=1, guard_id=0):
         dx = player.x - self.x
         dy = player.y - self.y
         distance = math.sqrt(dx * dx + dy * dy)
@@ -336,6 +337,15 @@ class Guard:
             self.suspicion += 1
         else:
             self.suspicion = max(0, self.suspicion - 1)
+
+        # Log detection event every 20 suspicion points
+        if stats and int(self.suspicion) % 20 == 0 and self.suspicion > 0:
+            stats.log_detection(
+                day, guard_id, self.type, self.state,
+                self.suspicion,
+                player.x, player.y,
+                self.x, self.y
+            )
 
         if self.suspicion > 60:
             if self.state != "chase":

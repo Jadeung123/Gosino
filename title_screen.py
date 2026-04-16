@@ -33,9 +33,10 @@ class TitleScreen:
 
         # Title buttons
         self.buttons = {
-            "play":     pygame.Rect(325, 300, 150, 50),
+            "play": pygame.Rect(325, 300, 150, 50),
             "settings": pygame.Rect(325, 368, 150, 50),
-            "quit":     pygame.Rect(325, 436, 150, 50),
+            "stats": pygame.Rect(325, 436, 150, 50),
+            "quit": pygame.Rect(325, 504, 150, 50),
         }
 
         # Settings buttons — only toggles, sliders handled separately
@@ -56,6 +57,7 @@ class TitleScreen:
             mx, my = pygame.mouse.get_pos()
             if self.buttons["play"].collidepoint(mx, my):     return "play"
             if self.buttons["settings"].collidepoint(mx, my): self._current = "settings"
+            if self.buttons["stats"].collidepoint(mx, my):    return "stats"
             if self.buttons["quit"].collidepoint(mx, my):     return "quit"
 
         elif self._current == "settings":
@@ -162,9 +164,10 @@ class TitleScreen:
             True, (155, 155, 155))
         screen.blit(tag, tag.get_rect(center=(SCREEN_WIDTH // 2, 268)))
 
-        self._btn(screen, self.buttons["play"],     "PLAY",     (42, 140, 60))
-        self._btn(screen, self.buttons["settings"], "SETTINGS", (42, 62,  140))
-        self._btn(screen, self.buttons["quit"],     "QUIT",     (130, 36, 36))
+        self._btn(screen, self.buttons["play"], "PLAY", (42, 140, 60))
+        self._btn(screen, self.buttons["settings"], "SETTINGS", (42, 62, 140))
+        self._btn(screen, self.buttons["stats"], "STATISTICS", (20, 90, 90))
+        self._btn(screen, self.buttons["quit"], "QUIT", (130, 36, 36))
 
         ver = self.font_sm.render("v1.0", True, (55, 55, 55))
         screen.blit(ver, (SCREEN_WIDTH - 44, SCREEN_HEIGHT - 24))
